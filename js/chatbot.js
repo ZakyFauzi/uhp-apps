@@ -1,6 +1,6 @@
 /* =============================================
    UHP v2.0 — UHePi AI Chatbot
-   Flow-card chat with OpenRouter LLM
+   Flow-card chat with Google Gemini API
    ============================================= */
 
 'use strict';
@@ -171,7 +171,7 @@ function sendSuggestion(text) {
 
 // ─── API Call ────────────────────────────────────────────────
 async function callUHePiAPI(messages) {
-  // Try Netlify Function first, fall back to direct API
+  // Try Netlify Function first (server-side proxy — key hidden)
   const endpoints = [
     '/.netlify/functions/chat',
     '/api/chat',
@@ -194,27 +194,45 @@ async function callUHePiAPI(messages) {
     }
   }
 
-  // Fallback: direct API call (key exposed but works for demo)
+  // Fallback: direct Gemini API call (for local development / when Netlify functions unavailable)
   try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const GEMINI_KEY = 'AIzaSyDc9k6NfmX1H2rGt2oEoJ1ojmNTT251LSg';
+    const model = 'gemini-2.0-flash-lite';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
+
+    // Convert OpenAI-style messages to Gemini format
+    let systemInstruction = '';
+    const contents = [];
+    for (const msg of messages) {
+      if (msg.role === 'system') {
+        systemInstruction = msg.content;
+      } else if (msg.role === 'user') {
+        contents.push({ role: 'user', parts: [{ text: msg.content }] });
+      } else if (msg.role === 'assistant') {
+        contents.push({ role: 'model', parts: [{ text: msg.content }] });
+      }
+    }
+
+    const geminiBody = {
+      contents,
+      generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+    };
+    if (systemInstruction) {
+      geminiBody.systemInstruction = { parts: [{ text: systemInstruction }] };
+    }
+
+    const res = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Authorization': 'Bearer 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',
-        'Content-Type': 'application/json',
-        'HTTP-Referer': window.location.origin,
-        'X-Title': 'UHP - UMKM Health Predictor',
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
-        messages: messages,
-        max_tokens: 1024,
-        temperature: 0.7,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(geminiBody),
     });
 
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Gemini API error ${res.status}: ${errText}`);
+    }
     const data = await res.json();
-    return data.choices?.[0]?.message?.content || 'Maaf, saya tidak bisa merespons saat ini.';
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Maaf, saya tidak bisa merespons saat ini.';
   } catch (err) {
     throw err;
   }

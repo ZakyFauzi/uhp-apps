@@ -1,8 +1,7 @@
 // UHP v2.0 — Netlify Serverless Function
-// Proxies chat requests to OpenRouter API, keeping the key server-side
+// Proxies chat requests to Google Gemini API, keeping the key server-side
 
 exports.handler = async function(event) {
-  // CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -24,37 +23,57 @@ exports.handler = async function(event) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid messages format' }) };
     }
 
-    // API key from Netlify environment variable
-    const apiKey = process.env.OPENROUTER_API_KEY || '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';
+    // API key: check Netlify env var first, then fallback
+    const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyDc9k6NfmX1H2rGt2oEoJ1ojmNTT251LSg';
+    const model = 'gemini-2.0-flash-lite';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://uhp-apps.netlify.app',
-        'X-Title': 'UHP - UMKM Health Predictor',
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
-        messages: messages,
-        max_tokens: 1024,
+    // Convert OpenAI-style messages to Gemini format
+    let systemInstruction = '';
+    const contents = [];
+
+    for (const msg of messages) {
+      if (msg.role === 'system') {
+        systemInstruction = msg.content;
+      } else if (msg.role === 'user') {
+        contents.push({ role: 'user', parts: [{ text: msg.content }] });
+      } else if (msg.role === 'assistant') {
+        contents.push({ role: 'model', parts: [{ text: msg.content }] });
+      }
+    }
+
+    const geminiBody = {
+      contents,
+      generationConfig: {
         temperature: 0.7,
-      }),
+        maxOutputTokens: 1024,
+      },
+    };
+
+    // Only add systemInstruction if present
+    if (systemInstruction) {
+      geminiBody.systemInstruction = { parts: [{ text: systemInstruction }] };
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(geminiBody),
     });
 
     if (!response.ok) {
       const errBody = await response.text();
-      console.error('OpenRouter error:', response.status, errBody);
+      console.error('Gemini API error:', response.status, errBody);
       return {
         statusCode: response.status,
         headers,
-        body: JSON.stringify({ error: `OpenRouter API error: ${response.status}` }),
+        body: JSON.stringify({ error: `Gemini API error: ${response.status}`, details: errBody }),
       };
     }
 
     const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || 'Maaf, saya tidak bisa merespons saat ini.';
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text
+      || 'Maaf, saya tidak bisa merespons saat ini.';
 
     return {
       statusCode: 200,
@@ -67,7 +86,7 @@ exports.handler = async function(event) {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Internal server error' }),
+      body: JSON.stringify({ error: 'Internal server error', message: err.message }),
     };
   }
 };
