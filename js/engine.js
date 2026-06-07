@@ -1,107 +1,115 @@
 'use strict';
-// Diurutkan berdasarkan panjang kata (Longest to Shortest) 
-// untuk mencegah overlapping (misal: "pengiriman cepat" diproses sebelum "cepat")
-const sortByLength = (arr) => arr.sort((a, b) => b.length - a.length);
 
-const STRONG_POSITIVE = sortByLength(['sangat bagus','sangat puas','luar biasa','perfect','excellent','sempurna','terbaik']);
-const STRONG_NEGATIVE = sortByLength(['sangat buruk','sangat kecewa','sangat lambat','sangat bermasalah','terburuk','parah']);
-const POSITIVE_WORDS = sortByLength([
-  'lancar','bagus','baik','ramah','cepat','tepat','senang','puas',
-  'konsisten','terjaga','mudah','responsif','komunikatif','repeat order','selalu',
-  'mantap','oke','cocok','suka','mau lagi','recommended','rekomendasi',
-  'kualitas','sesuai','memuaskan','great','good','fast','nice',
-  'pengiriman cepat','admin komunikatif','proses checkout tidak ribet','mudah dipakai',
-  'pemesanan mudah','pelayanan cepat','pesanan selalu tepat','seimbang',
-  'gercep','mantul','cuan','kece','top','jos','joss','gokil'
-]);
-const NEGATIVE_WORDS = sortByLength([
-  'lambat','buruk','jelek','kecewa','kurang','telat','terlambat','bermasalah',
-  'naik harga','mahal','sering kosong','stok kosong','lama','mengecewakan',
-  'menurun','rugi','susah','tidak responsif','tidak ada','ribet','gagal',
-  'batal','tidak sesuai','protes','banyak masalah','kualitas buruk',
-  'tidak konsisten','respons lambat','keterlambatan','komplain','tidak ramah',
-  'harga naik','layanan tidak membaik','kosong','proses bermasalah',
-  'tidak oke','kurang memuaskan','tidak tepat','sering terlambat'
-]);
-
-// Kata-kata yang membalikkan makna (Negation)
+// ─── KAMUS SENTIMEN UHP v2.1 ───────────────────────────────────────────
+// Pisahkan kata penguat (Amplifiers) agar lebih dinamis
+const AMPLIFIER_WORDS = ['sangat', 'sekali', 'banget', 'super', 'paling', 'luarbiasa', 'terlalu', 'ekstra'];
 const NEGATION_WORDS = ['tidak', 'tdk', 'kurang', 'krg', 'bukan', 'jangan', 'gak', 'ga', 'belum'];
 
-// ─── Sentiment Engine 
-function computeSentiment(text) {
-  if (!text || typeof text !== 'string' || text.trim() === '') return 0;
-  
-  // Menghapus tanda baca berlebih, ubah ke lowercase
-  let processedText = text.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, " ");
-  let score = 0;
-  let matchedTokens = []; // Untuk kebutuhan debugging
+// HAPUS kata benda netral (kualitas, pelayanan, pengiriman, admin, produk) dari sini
+const POSITIVE_WORDS = [
+  // Kualitas & Kondisi
+  'bagus', 'baik', 'mantap', 'oke', 'keren', 'prima', 'asli', 'terbaik', 'sempurna',
+  'excellent', 'perfect', 'berkualitas', 'jempolan', 'utuh', 'selamat', 'aman',
+  'rapi', 'mulus', 'awet', 'kokoh', 'tepat',
+  // Layanan & Perasaan
+  'ramah', 'cepat', 'senang', 'puas', 'lancar', 'konsisten', 'terjaga',
+  'mudah', 'responsif', 'komunikatif', 'bersahabat', 'kooperatif', 'membantu',
+  'suka', 'recommended', 'rekomendasi', 'sesuai', 'memuaskan', 'kilat'
+];
 
-  // Helper untuk mencari dan mengganti kata agar tidak dihitung ganda (Masking)
-  const matchAndMask = (wordList, weight, type) => {
-    wordList.forEach(word => {
-      // Menggunakan \b (word boundary) agar "lama" tidak match di "selama"
-      const regex = new RegExp(`\\b${word}\\b`, 'gi');
-      if (regex.test(processedText)) {
-        // Hitung berapa kali kata tersebut muncul
-        const matchCount = processedText.match(regex).length;
-        score += (weight * matchCount);
-        for(let i=0; i<matchCount; i++) matchedTokens.push(`${type}[${word}]`);
-        
-        // Ganti kata yang sudah dihitung dengan string kosong/placeholder
-        processedText = processedText.replace(regex, ' [MATCHED] ');
-      }
-    });
+// Tambahkan kata-kata dari dataset negatif yang sering muncul
+const NEGATIVE_WORDS = [
+  // Kualitas & Kondisi
+  'buruk', 'jelek', 'cacat', 'rusak', 'hancur', 'lecet', 'robek', 'basah', 'tipis',
+  'parah', 'terburuk', 'asal', 'asalasalan', 'mahal',
+  // Layanan & Perasaan
+  'lambat', 'kecewa', 'mengecewakan', 'telat', 'terlambat', 'bermasalah',
+  'kosong', 'lama', 'menurun', 'rugi', 'susah', 'ribet', 'gagal', 'batal', 'protes',
+  'komplain', 'kapok', 'jutek', 'salah', 'menyesal', 'berbelit', 'membingungkan',
+  'abaikan', 'diabaikan', 'kasar', 'jutek'
+];
+
+// Diurutkan berdasarkan panjang agar frase yang lebih panjang dieksekusi duluan
+const sortByLength = (arr) => arr.sort((a, b) => b.length - a.length);
+
+// ─── SENTIMENT ENGINE LOGIC ───────────────────────────────────────────
+function computeSentiment(text) {
+  if (!text || typeof text !== 'string' || text.trim() === '') return { score: 0, label: 'Netral', matches: [] };
+  
+  // Preprocessing: ubah frase tertentu menjadi 1 kata agar mudah diproses
+  let processedText = text.toLowerCase()
+    .replace(/luar biasa/g, 'luarbiasa')
+    .replace(/asal asalan/g, 'asalasalan')
+    .replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, " ");
+
+  let score = 0;
+  let matchedTokens = [];
+
+  const posWords = sortByLength([...POSITIVE_WORDS]);
+  const negWords = sortByLength([...NEGATIVE_WORDS]);
+  const negations = sortByLength([...NEGATION_WORDS]);
+  const amplifiers = sortByLength([...AMPLIFIER_WORDS]);
+
+  // Helper Engine dengan tambahan dukungan akhiran bahasa indonesia (-nya)
+  const applyRule = (regex, weight, labelType) => {
+    if (regex.test(processedText)) {
+      const count = processedText.match(regex).length;
+      score += (weight * count);
+      for(let i=0; i<count; i++) matchedTokens.push(`${labelType}`);
+      // Ganti dengan spasi kosong agar tidak bertabrakan dengan rule lain
+      processedText = processedText.replace(regex, ' [MASK] '); 
+    }
   };
 
-  // Handle Negasi sebelum mencari kata positif/negatif murni
-  // Contoh: "tidak bagus", "kurang ramah"
-  NEGATION_WORDS.forEach(neg => {
-    POSITIVE_WORDS.forEach(pos => {
-      const negRegex = new RegExp(`\\b${neg}\\s+${pos}\\b`, 'gi');
-      if (negRegex.test(processedText)) {
-        const count = processedText.match(negRegex).length;
-        score -= (0.25 * count); // Dibalik menjadi negatif
-        for(let i=0; i<count; i++) matchedTokens.push(`NEG_FLIP[${neg} ${pos}]`);
-        processedText = processedText.replace(negRegex, ' [MATCHED_NEG] ');
-      }
+  // RULE 1: Negasi + Kata Sentimen (Contoh: "tidak bagus", "kurang cepat")
+  negations.forEach(neg => {
+    posWords.forEach(pos => {
+      // (?:nya)? menangkap kata berafiks seperti "bagusnya", "cepatnya"
+      applyRule(new RegExp(`\\b${neg}\\s+${pos}(?:nya)?\\b`, 'gi'), -0.45, `NEG_FLIP[${neg} ${pos}]`);
+    });
+    negWords.forEach(negW => {
+      // "tidak buruk" -> Sedikit positif
+      applyRule(new RegExp(`\\b${neg}\\s+${negW}(?:nya)?\\b`, 'gi'), 0.20, `NEG_FLIP[${neg} ${negW}]`);
     });
   });
 
-  // Handle Negasi untuk Kata Negatif (Negated Negative -> Positive)
-  // Contoh: "tidak lambat", "ga ribet"
-  NEGATION_WORDS.forEach(neg => {
-    NEGATIVE_WORDS.forEach(negWord => {
-      const negRegex = new RegExp(`\\b${neg}\\s+${negWord}\\b`, 'gi');
-      if (negRegex.test(processedText)) {
-        const count = processedText.match(negRegex).length;
-        score += (0.25 * count); // Dibalik menjadi positif
-        for(let i=0; i<count; i++) matchedTokens.push(`NEG_FLIP[${neg} ${negWord}]`);
-        processedText = processedText.replace(negRegex, ' [MATCHED_NEG_NEG] ');
-      }
+  // RULE 2: Kata Penguat + Kata Sentimen (Contoh: "sangat bagus", "jelek sekali")
+  amplifiers.forEach(amp => {
+    posWords.forEach(pos => {
+      applyRule(new RegExp(`\\b${amp}\\s+${pos}(?:nya)?\\b`, 'gi'), 0.65, `STRONG_POS[${amp} ${pos}]`);
+      applyRule(new RegExp(`\\b${pos}(?:nya)?\\s+${amp}\\b`, 'gi'), 0.65, `STRONG_POS[${pos} ${amp}]`);
+    });
+    negWords.forEach(negW => {
+      applyRule(new RegExp(`\\b${amp}\\s+${negW}(?:nya)?\\b`, 'gi'), -0.65, `STRONG_NEG[${amp} ${negW}]`);
+      applyRule(new RegExp(`\\b${negW}(?:nya)?\\s+${amp}\\b`, 'gi'), -0.65, `STRONG_NEG[${negW} ${amp}]`);
     });
   });
 
-  // Proses ekstraksi berurutan (dari yang berbobot/terpanjang ke terpendek)
-  matchAndMask(STRONG_POSITIVE, 0.65, 'SP');
-  matchAndMask(STRONG_NEGATIVE, -0.65, 'SN');
-  matchAndMask(POSITIVE_WORDS, 0.25, 'P');
-  matchAndMask(NEGATIVE_WORDS, -0.25, 'N');
+  // RULE 3: Kata Sentimen Dasar (Yang belum ditangkap oleh Negasi / Penguat)
+  posWords.forEach(pos => {
+    applyRule(new RegExp(`\\b${pos}(?:nya)?\\b`, 'gi'), 0.25, `POS[${pos}]`);
+  });
+  negWords.forEach(negW => {
+    applyRule(new RegExp(`\\b${negW}(?:nya)?\\b`, 'gi'), -0.25, `NEG[${negW}]`);
+  });
 
-  // Normalisasi skor akhir (maksimal 1.0, minimal -1.0)
+  // RULE 4: Penalti khusus untuk kata "kurang" yang berdiri sendiri (seringkali bermakna negatif)
+  applyRule(/\bkurang\b/gi, -0.20, `NEG[kurang]`);
+
+  // Normalisasi skor akhir
   const finalScore = Math.max(-1, Math.min(1, score));
   
-  // Return object
   return {
-    score: Number(finalScore.toFixed(2)), // Pembulatan 2 desimal
+    score: Number(finalScore.toFixed(2)),
     label: sentimentLabel(finalScore),
-    matches: matchedTokens // Untuk reporting testing
+    matches: matchedTokens
   };
 }
 
 function sentimentLabel(score) {
   if (score >= 0.5) return 'Sangat Positif';
   if (score >= 0.2) return 'Positif';
-  if (score > -0.2 && score < 0.2) return 'Netral';
+  if (score > -0.2 && score < 0.2) return 'Netral'; // Rentang netral diperketat
   if (score <= -0.5) return 'Sangat Negatif';
   return 'Negatif';
 }
