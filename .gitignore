@@ -1,10 +1,3 @@
-# IDE & Editor
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
 # Virtual environment
 .venv/
 venv/
@@ -15,19 +8,9 @@ env/
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-*.egg
-*.egg-info/
 
-# Jupyter Notebooks
-*.ipynb
+# Jupyter Notebook checkpoints
 .ipynb_checkpoints
-
-# ML Models & Large Files
-models/
-*.pkl
-*.h5
-*.joblib
 
 # OS generated files
 Thumbs.db
@@ -35,24 +18,8 @@ ehthumbs.db
 Desktop.ini
 .DS_Store
 
-# Screenshots & Media
-screencapture-*.png
-*.mp4
-*.webm
-
-# Test & Development files
-test_scenario_realtime_prediction.md
-train_rf_model.py
-generate_test_reviews.py
-generate_preview.py
-
-# Build & Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-/build/
-/dist/
-
-# Environment
+# Local env files
 .env
 .env.local
+.env.*.local
+

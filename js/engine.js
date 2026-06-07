@@ -11,7 +11,8 @@ const POSITIVE_WORDS = sortByLength([
   'mantap','oke','cocok','suka','mau lagi','recommended','rekomendasi',
   'kualitas','sesuai','memuaskan','great','good','fast','nice',
   'pengiriman cepat','admin komunikatif','proses checkout tidak ribet','mudah dipakai',
-  'pemesanan mudah','pelayanan cepat','pesanan selalu tepat','seimbang'
+  'pemesanan mudah','pelayanan cepat','pesanan selalu tepat','seimbang',
+  'gercep','mantul','cuan','kece','top','jos','joss','gokil'
 ]);
 const NEGATIVE_WORDS = sortByLength([
   'lambat','buruk','jelek','kecewa','kurang','telat','terlambat','bermasalah',
@@ -66,6 +67,20 @@ function computeSentiment(text) {
     });
   });
 
+  // Handle Negasi untuk Kata Negatif (Negated Negative -> Positive)
+  // Contoh: "tidak lambat", "ga ribet"
+  NEGATION_WORDS.forEach(neg => {
+    NEGATIVE_WORDS.forEach(negWord => {
+      const negRegex = new RegExp(`\\b${neg}\\s+${negWord}\\b`, 'gi');
+      if (negRegex.test(processedText)) {
+        const count = processedText.match(negRegex).length;
+        score += (0.25 * count); // Dibalik menjadi positif
+        for(let i=0; i<count; i++) matchedTokens.push(`NEG_FLIP[${neg} ${negWord}]`);
+        processedText = processedText.replace(negRegex, ' [MATCHED_NEG_NEG] ');
+      }
+    });
+  });
+
   // Proses ekstraksi berurutan (dari yang berbobot/terpanjang ke terpendek)
   matchAndMask(STRONG_POSITIVE, 0.65, 'SP');
   matchAndMask(STRONG_NEGATIVE, -0.65, 'SN');
@@ -114,9 +129,9 @@ function predictClass(revenue, expenses, transactions, tenure, sentimentScore) {
     const sentScore = Math.max(0, (-sentimentScore + 0.3) / 1.3);
     confidence = 0.45 + (burnScore * 0.25) + (lossScore * 0.2) + (sentScore * 0.1);
   }
-  else if (burnRate >= 1.0 || npm < 0) {
+  else if (burnRate >= 1.0 || npm < 0 || (burnRate >= 0.85 && sentimentScore < 0)) {
     predictedClass = 'Struggling';
-    const burnScore = Math.min(1, (burnRate - 1.0) / 0.15);
+    const burnScore = burnRate >= 1.0 ? Math.min(1, (burnRate - 1.0) / 0.15) : Math.max(0, (burnRate - 0.8) / 0.2);
     const lossScore = Math.min(1, Math.abs(Math.min(0, npm)) / 20);
     const sentScore = Math.max(0, (-sentimentScore + 1) / 2);
     confidence = 0.40 + (burnScore * 0.2) + (lossScore * 0.2) + (sentScore * 0.1);

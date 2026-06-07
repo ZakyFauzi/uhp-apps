@@ -196,8 +196,8 @@ async function callUHePiAPI(messages) {
 
   // Fallback: direct Gemini API call (for local development / when Netlify functions unavailable)
   try {
-    const GEMINI_KEY = 'AIzaSyDc9k6NfmX1H2rGt2oEoJ1ojmNTT251LSg';
-    const model = 'gemini-2.0-flash-lite';
+    const GEMINI_KEY = 'YOUR_GEMINI_API_KEY_PLACEHOLDER';
+    const model = 'gemini-2.5-flash';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
 
     // Convert OpenAI-style messages to Gemini format

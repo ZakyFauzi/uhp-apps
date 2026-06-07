@@ -434,10 +434,11 @@
 .footer-links a { transition: var(--transition); }
 .footer-links a:hover { color: var(--text-primary); }
 
-/* --- Responsive --- */
 @media (max-width: 768px) {
-  .landing-nav { padding: 0 20px; }
+  .landing-nav { padding: 0 12px; }
   .nav-brand-sub { display: none; }
+  .nav-links { gap: 4px; }
+  .nav-links a { padding: 6px 10px; font-size: 11.5px; }
 
   .hero { padding: 80px 20px 40px; min-height: auto; }
   .hero-title { font-size: 32px; }

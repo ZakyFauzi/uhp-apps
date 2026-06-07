@@ -260,7 +260,7 @@ async function uhpLogin(email, password) {
 // ─── Logout ──────────────────────────────────────────────────
 function uhpLogout() {
   localStorage.removeItem(AUTH_SESSION_KEY);
-  window.location.href = 'index.html';
+  window.location.replace('login.html');
 }
 
 // ─── Get Current Session ─────────────────────────────────────
@@ -288,7 +288,7 @@ function isLoggedIn() {
 // ─── Route Guards ────────────────────────────────────────────
 function requireAuth() {
   if (!isLoggedIn()) {
-    window.location.href = 'login.html';
+    window.location.replace('login.html');
     return false;
   }
   return true;
@@ -296,7 +296,7 @@ function requireAuth() {
 
 function redirectIfLoggedIn(target = 'dashboard.html') {
   if (isLoggedIn()) {
-    window.location.href = target;
+    window.location.replace(target);
     return true;
   }
   return false;
@@ -309,3 +309,10 @@ function getMyUMKM() {
   const allProfiles = getAllUMKMProfiles();
   return allProfiles[session.umkmId] || null;
 }
+
+// Force validation on back/forward navigation to prevent BF Cache back-button bypass
+window.addEventListener('pageshow', function(event) {
+  if (window.location.pathname.includes('dashboard.html') && !isLoggedIn()) {
+    window.location.replace('login.html');
+  }
+});

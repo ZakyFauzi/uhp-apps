@@ -24,8 +24,8 @@ exports.handler = async function(event) {
     }
 
     // API key: check Netlify env var first, then fallback
-    const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyDc9k6NfmX1H2rGt2oEoJ1ojmNTT251LSg';
-    const model = 'gemini-2.0-flash-lite';
+    const apiKey = process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY_PLACEHOLDER';
+    const model = 'gemini-2.5-flash';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     // Convert OpenAI-style messages to Gemini format
