@@ -89,7 +89,7 @@ python -m http.server 8080
 
    | Key | Value |
    |-----|-------|
-   | `GEMINI_API_KEY` | `AIzaSyDc9k6NfmX1H2rGt2oEoJ1ojmNTT251LSg` |
+   | `GEMINI_API_KEY` | `YOUR_GEMINI_API_KEY_PLACEHOLDER` |
 
 4. **Trigger Redeploy** — Setelah menambahkan environment variable, klik `Deploys → Trigger deploy → Deploy site`
 
@@ -131,7 +131,7 @@ Landing Page ──→ Coba Demo ──→ Demo Mode (terbatas)
 
 ## 🤖 UHePi — AI Assistant
 
-UHePi (UMKM Health Predictor Intelligence) adalah chatbot AI yang menggunakan **Google Gemini API** (`gemini-2.0-flash-lite`) untuk memberikan konsultasi bisnis. Fitur:
+UHePi (UMKM Health Predictor Intelligence) adalah chatbot AI yang menggunakan **Google Gemini API** (`gemini-2.5-flash`) untuk memberikan konsultasi bisnis. Fitur:
 
 - **Context-aware**: Jika user login, UHePi otomatis mengetahui data bisnis user (revenue, burn rate, NPM, dll.)
 - **Bahasa Indonesia**: Selalu menjawab dalam Bahasa Indonesia yang mudah dipahami
@@ -143,7 +143,7 @@ UHePi (UMKM Health Predictor Intelligence) adalah chatbot AI yang menggunakan **
 | Item | Detail |
 |------|--------|
 | Provider | Google AI (Gemini) |
-| Model | `gemini-2.0-flash-lite` |
+| Model | `gemini-2.5-flash` |
 | Rate Limit | 30 RPM / 1M TPM (free tier) |
 | Proxy | `netlify/functions/chat.js` |
 

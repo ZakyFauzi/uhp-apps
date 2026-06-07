@@ -19,7 +19,8 @@ const POSITIVE_WORDS = [
   'terbaik','mantap','oke','cocok','suka','mau lagi','puas','recommended','rekomendasi',
   'kualitas','sesuai','memuaskan','excellent','great','good','fast','nice',
   'pengiriman cepat','admin komunikatif','proses checkout tidak ribet','mudah dipakai',
-  'pemesanan mudah','pelayanan cepat','pesanan selalu tepat','seimbang'
+  'pemesanan mudah','pelayanan cepat','pesanan selalu tepat','seimbang',
+  'gercep','mantul','cuan','kece','top','jos','joss','gokil'
 ];
 
 const NEGATIVE_WORDS = [
@@ -38,8 +39,29 @@ const STRONG_NEGATIVE = ['sangat buruk','sangat kecewa','sangat lambat','sangat 
 // ─── Sentiment Engine ────────────────────────────────────────
 function computeSentiment(text) {
   if (!text || text.trim() === '') return 0;
-  const lower = text.toLowerCase();
+  let lower = text.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, " ");
   let score = 0;
+
+  // Handle negated positive/negative first
+  const NEGATION_WORDS = ['tidak', 'tdk', 'kurang', 'krg', 'bukan', 'jangan', 'gak', 'ga', 'belum'];
+  
+  // Replace negated negatives with a placeholder so they don't trigger negative rules
+  NEGATION_WORDS.forEach(neg => {
+    NEGATIVE_WORDS.forEach(negWord => {
+      const phrase = neg + ' ' + negWord;
+      if (lower.includes(phrase)) {
+        score += 0.25;
+        lower = lower.replace(phrase, ' [MATCHED_NEG_NEG] ');
+      }
+    });
+    POSITIVE_WORDS.forEach(posWord => {
+      const phrase = neg + ' ' + posWord;
+      if (lower.includes(phrase)) {
+        score -= 0.25;
+        lower = lower.replace(phrase, ' [MATCHED_NEG_POS] ');
+      }
+    });
+  });
 
   STRONG_POSITIVE.forEach(w => { if (lower.includes(w)) score += 0.65; });
   STRONG_NEGATIVE.forEach(w => { if (lower.includes(w)) score -= 0.65; });
@@ -89,10 +111,10 @@ function predictClass(revenue, expenses, transactions, tenure, sentimentScore) {
     const sentScore = Math.max(0, (-sentNorm + 0.3) / 1.3);
     confidence = 0.45 + (burnScore * 0.25) + (lossScore * 0.2) + (sentScore * 0.1);
   }
-  // Struggling: Moderate to high burn, net loss
-  else if (burnRate >= 1.0 || npm < 0) {
+  // Struggling: Moderate to high burn, net loss, or thin margin + negative sentiment
+  else if (burnRate >= 1.0 || npm < 0 || (burnRate >= 0.85 && sentNorm < 0)) {
     predictedClass = 'Struggling';
-    const burnScore = Math.min(1, (burnRate - 1.0) / 0.15);
+    const burnScore = burnRate >= 1.0 ? Math.min(1, (burnRate - 1.0) / 0.15) : Math.max(0, (burnRate - 0.8) / 0.2);
     const lossScore = Math.min(1, Math.abs(Math.min(0, npm)) / 20);
     const sentScore = Math.max(0, (-sentNorm + 1) / 2);
     confidence = 0.40 + (burnScore * 0.2) + (lossScore * 0.2) + (sentScore * 0.1);

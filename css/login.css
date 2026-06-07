@@ -184,23 +184,36 @@
 }
 
 .login-footer {
-  text-align: center;
-  margin-top: 24px;
-  font-size: 12px;
-  color: var(--text-muted);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 10px;
+  margin-top: 24px;
 }
-.login-footer a {
+.no-account {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+.no-account a {
   color: var(--accent-brand);
   font-weight: 600;
+  margin-left: 4px;
+  text-decoration: none;
   transition: var(--transition);
 }
-.login-footer a:hover { color: var(--growth); }
-.login-divider {
-  color: var(--border-subtle);
+.no-account a:hover {
+  color: var(--growth);
+  text-decoration: underline;
+}
+.back-link {
+  font-size: 12px;
+  color: var(--text-muted) !important;
+  text-decoration: none;
+  transition: var(--transition);
+}
+.back-link:hover {
+  color: var(--text-primary) !important;
 }
 
 /* Credential Hint */
