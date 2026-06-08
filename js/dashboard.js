@@ -24,13 +24,14 @@ const isDashboardPage = window.location.pathname.includes('dashboard');
 async function updateSentimentPreview() {
   let texts = [];
   
-  // Jika ada review dari file, gunakan semua review untuk menghitung average sentiment
-  if (uploadedReviews.length > 0) {
+  // Prioritas: Teks ulasan yang diketik langsung di textarea
+  const el = document.getElementById('inputReview');
+  if (el && el.value.trim() !== '') {
+    texts = [el.value];
+  } 
+  // Fallback: Gunakan ulasan dari upload file
+  else if (uploadedReviews.length > 0) {
     texts = uploadedReviews;
-  } else {
-    // Fallback ke textarea jika ada
-    const el = document.getElementById('inputReview');
-    if (el && el.value.trim() !== '') texts = [el.value];
   }
   
   if (texts.length === 0) return;
@@ -983,13 +984,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Input event listeners for currency inputs to update formatted labels in real-time
   const revInput = document.getElementById('inputRevenue');
   const expInput = document.getElementById('inputExpenses');
+  const reviewInput = document.getElementById('inputReview');
+  
   if (revInput) {
     revInput.addEventListener('input', updateCurrencyHelpers);
   }
   if (expInput) {
     expInput.addEventListener('input', updateCurrencyHelpers);
   }
+  if (reviewInput) {
+    reviewInput.addEventListener('input', updateSentimentPreview);
+  }
   updateCurrencyHelpers();
+  updateSentimentPreview();
 
   // Load embedded data
   loadData();

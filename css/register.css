@@ -119,7 +119,7 @@ select.login-input:focus {
 }
 
 select.login-input option {
-  background: var(--bg-primary);
+  background: var(--bg-panel);
   color: var(--text-primary);
   padding: 8px;
 }

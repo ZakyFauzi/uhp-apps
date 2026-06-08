@@ -87,7 +87,7 @@
 .uhepi-avatar {
   background: var(--accent-brand-dim);
   color: var(--accent-brand);
-  border: 1px solid rgba(59,130,246,0.2);
+  border: 1px solid var(--accent-brand-glow);
 }
 
 .user-avatar {
@@ -105,7 +105,7 @@
 
 .user-card .chat-card-body {
   background: var(--accent-brand-dim);
-  border-color: rgba(59,130,246,0.15);
+  border-color: var(--accent-brand-glow);
 }
 
 .chat-card-name {

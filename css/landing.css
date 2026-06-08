@@ -14,7 +14,7 @@
   justify-content: space-between;
   padding: 0 40px;
   height: 64px;
-  background: rgba(10, 14, 23, 0.8);
+  background: rgba(248, 250, 252, 0.8);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-subtle);
@@ -22,8 +22,8 @@
 }
 
 .landing-nav.scrolled {
-  background: rgba(10, 14, 23, 0.95);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
 }
 
 .nav-brand {
@@ -112,8 +112,8 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    linear-gradient(rgba(15, 23, 42, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.02) 1px, transparent 1px);
   background-size: 60px 60px;
   pointer-events: none;
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
@@ -157,7 +157,7 @@
   opacity: 0;
 }
 .hero-title .gradient-text {
-  background: linear-gradient(135deg, #3b82f6, #00e676, #60a5fa);
+  background: linear-gradient(135deg, #2563eb, #10b981, #0284c7);
   background-size: 200% 200%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -258,7 +258,7 @@
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
 }
 
@@ -274,7 +274,7 @@
 .feature-card:hover {
   border-color: var(--border-strong);
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
 }
 .feature-card::before {
   content: '';

@@ -115,14 +115,7 @@ function predictClass(revenue, expenses, transactions, tenure, sentimentScore) {
   let predictedClass = '';
   let confidence = 0;
 
-  if (burnRate < 0.8 && npm >= 15 && netProfit > 0) {
-    predictedClass = 'Elite';
-    const burnScore = (0.8 - burnRate) / 0.3;
-    const npmScore  = Math.min(1, (npm - 15) / 25);
-    const sentScore = Math.max(0, (sentimentScore + 1) / 2);
-    confidence = 0.45 + (burnScore * 0.25) + (npmScore * 0.2) + (sentScore * 0.1);
-  }
-  else if ((burnRate >= 1.15 && npm <= -18) || (burnRate >= 1.2 && sentimentScore < -0.3)) {
+  if ((burnRate >= 1.15 && npm <= -18) || (burnRate >= 1.2 && sentimentScore < -0.3)) {
     predictedClass = 'Critical';
     const burnScore = Math.min(1, (burnRate - 1.15) / 0.3);
     const lossScore = Math.min(1, Math.abs(npm + 18) / 17);
@@ -135,6 +128,13 @@ function predictClass(revenue, expenses, transactions, tenure, sentimentScore) {
     const lossScore = Math.min(1, Math.abs(Math.min(0, npm)) / 20);
     const sentScore = Math.max(0, (-sentimentScore + 1) / 2);
     confidence = 0.40 + (burnScore * 0.2) + (lossScore * 0.2) + (sentScore * 0.1);
+  }
+  else if (burnRate < 0.8 && npm >= 15 && sentimentScore >= 0.2 && netProfit > 0) {
+    predictedClass = 'Elite';
+    const burnScore = (0.8 - burnRate) / 0.3;
+    const npmScore  = Math.min(1, (npm - 15) / 25);
+    const sentScore = Math.max(0, (sentimentScore + 1) / 2);
+    confidence = 0.45 + (burnScore * 0.25) + (npmScore * 0.2) + (sentScore * 0.1);
   }
   else {
     predictedClass = 'Growth';
