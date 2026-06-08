@@ -570,4 +570,109 @@
   .mybiz-stat-value { font-size: 18px; }
 }
 
+/* --- Expandable Monthly History List --- */
+.mybiz-history-list {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  margin-top: 20px;
+}
+.mybiz-history-list h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.history-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mybiz-history-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  overflow: hidden;
+  transition: var(--transition);
+}
+.mybiz-history-card:hover {
+  border-color: var(--border-strong);
+}
+.mybiz-history-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  font-family: var(--font);
+  transition: var(--transition);
+}
+.mybiz-history-toggle:hover {
+  background: var(--bg-elevated);
+}
+.mybiz-history-month {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.mybiz-history-arrow {
+  color: var(--text-muted);
+  transition: transform 0.3s ease;
+}
+.mybiz-history-card.active .mybiz-history-arrow {
+  transform: rotate(180deg);
+  color: var(--text-primary);
+}
+.mybiz-history-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--bg-panel);
+}
+.mybiz-history-card.active .mybiz-history-content {
+  border-top: 1px solid var(--border-subtle);
+}
+.mybiz-history-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 16px 18px;
+}
+.mybiz-history-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mybiz-history-detail .detail-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.mybiz-history-detail .detail-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .mybiz-history-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+@media (max-width: 480px) {
+  .mybiz-history-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
 

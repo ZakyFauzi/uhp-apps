@@ -910,6 +910,53 @@ function renderMyBusiness() {
       </div>`;
   }).join('');
 
+  // Expandable monthly history list (newest first)
+  const historyListHTML = [...umkm.history].reverse().map((h, index) => {
+    const netProfit = h.revenue - h.expenses;
+    const npm = ((netProfit / h.revenue) * 100).toFixed(1);
+    const burnRate = (h.expenses / h.revenue).toFixed(3);
+    const sentimentText = h.sentiment > 0.05 ? 'Positif' : (h.sentiment < -0.05 ? 'Negatif' : 'Netral');
+
+    return `
+      <div class="mybiz-history-card">
+        <button class="mybiz-history-toggle" onclick="toggleHistoryCard(${index})">
+          <span class="mybiz-history-month">${h.month}</span>
+          <svg class="mybiz-history-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="mybiz-history-content" id="historyContent-${index}">
+          <div class="mybiz-history-grid">
+            <div class="mybiz-history-detail">
+              <span class="detail-label">Pendapatan</span>
+              <span class="detail-value">${formatIDR(h.revenue)}</span>
+            </div>
+            <div class="mybiz-history-detail">
+              <span class="detail-label">Pengeluaran</span>
+              <span class="detail-value">${formatIDR(h.expenses)}</span>
+            </div>
+            <div class="mybiz-history-detail">
+              <span class="detail-label">Net Profit Margin</span>
+              <span class="detail-value ${parseFloat(npm) >= 0 ? 'elite-color' : 'critical-color'}">${npm}%</span>
+            </div>
+            <div class="mybiz-history-detail">
+              <span class="detail-label">Burn Rate</span>
+              <span class="detail-value ${parseFloat(burnRate) < 1 ? 'growth-color' : 'critical-color'}">${burnRate}</span>
+            </div>
+            <div class="mybiz-history-detail">
+              <span class="detail-label">Transaksi</span>
+              <span class="detail-value">${h.transactions}</span>
+            </div>
+            <div class="mybiz-history-detail">
+              <span class="detail-label">Sentimen</span>
+              <span class="detail-value">${h.sentiment.toFixed(2)} (${sentimentText})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
   container.innerHTML = `
     <div class="mybiz-profile" style="--badge-color:${classColor}">
       <div class="mybiz-header">
@@ -953,8 +1000,39 @@ function renderMyBusiness() {
       <h3>💬 Ulasan Terakhir</h3>
       <div class="mybiz-review-text">"${umkm.recentReview}"</div>
     </div>
+
+    <div class="mybiz-history-list">
+      <h3>📋 Riwayat Detail Bulanan</h3>
+      <div class="history-cards-container">
+        ${historyListHTML}
+      </div>
+    </div>
   `;
 }
+
+// Expandable history accordion toggle function
+function toggleHistoryCard(index) {
+  const card = document.getElementById(`historyContent-${index}`).closest('.mybiz-history-card');
+  const content = document.getElementById(`historyContent-${index}`);
+  const allCards = document.querySelectorAll('.mybiz-history-card');
+  
+  allCards.forEach(c => {
+    if (c !== card) {
+      c.classList.remove('active');
+      const otherContent = c.querySelector('.mybiz-history-content');
+      if (otherContent) otherContent.style.maxHeight = null;
+    }
+  });
+
+  card.classList.toggle('active');
+  if (card.classList.contains('active')) {
+    content.style.maxHeight = content.scrollHeight + "px";
+  } else {
+    content.style.maxHeight = null;
+  }
+}
+window.toggleHistoryCard = toggleHistoryCard;
+
 
 // ─── Init on Page Load ───────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
