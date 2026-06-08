@@ -1404,8 +1404,9 @@ function renderMyBusiness() {
   let reviewsToShow = [];
   if (transactions.length > 0) {
     reviewsToShow = transactions
-      .filter(t => t.review_text && t.review_text.trim() !== '')
-      .slice(0, 4);
+      .filter(t => (t.review_text && t.review_text.trim() !== '') || (t.review && t.review.trim() !== ''))
+      .slice(0, 4)
+      .map(t => ({ ...t, review_text: t.review_text || t.review }));
   }
 
   container.innerHTML = `
@@ -1487,17 +1488,19 @@ function renderMyBusiness() {
           </div>
 
           <div class="mybiz-review-summary">
-            <h4>Ringkasan Bulan ke Bulan</h4>
+            <h4>📅 Ringkasan 6 Bulan Terakhir</h4>
             <div class="summary-timeline">
-              ${history.slice().reverse().map(r => {
+              ${history.slice(-6).reverse().map(r => {
                 const badgeClass = `class-badge class-${r.class.toLowerCase()}`;
                 const sentColor = r.sentiment >= 0.2 ? 'var(--elite)' : r.sentiment <= -0.15 ? 'var(--critical)' : 'var(--growth)';
+                const revFmt = r.revenue >= 1000000 ? (r.revenue/1000000).toFixed(1)+'M' : (r.revenue/1000).toFixed(0)+'K';
                 return `
                 <div class="timeline-item">
                   <div class="timeline-month"><strong>${r.month}</strong></div>
                   <div class="timeline-details">
                     <span class="${badgeClass}">${r.class}</span>
                     <span class="timeline-stat">🛒 ${r.transactions} trx</span>
+                    <span class="timeline-stat" style="color:var(--elite)">💰 ${revFmt}</span>
                     <span class="timeline-stat" style="color:${sentColor}">💬 ${(r.sentiment >= 0 ? '+' : '') + r.sentiment.toFixed(2)}</span>
                   </div>
                 </div>`;
@@ -1512,10 +1515,51 @@ function renderMyBusiness() {
     <div class="mybiz-tx-section">
       <div class="mybiz-tx-header">
         <h3>📊 Data Explorer Transaksi Realtime</h3>
-        <button class="nav-btn active" onclick="toggleAddTransactionForm()" style="background:var(--accent-brand); border-color:var(--accent-brand); color:white;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Tambah Transaksi
-        </button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="nav-btn active" onclick="toggleAddTransactionForm()" style="background:var(--accent-brand); border-color:var(--accent-brand); color:white;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Tambah Transaksi
+          </button>
+          <button class="nav-btn" onclick="toggleBulkUploadForm()" style="border-color:var(--accent-brand); color:var(--accent-brand);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+            Upload CSV/Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- BULK UPLOAD FORM (HIDDEN BY DEFAULT) -->
+      <div class="mybiz-form-card" id="bulkUploadFormCard" style="display: none;">
+        <h4 style="margin-top:0;margin-bottom:8px;color:var(--text-primary);">📂 Upload Data Transaksi (CSV/Excel)</h4>
+        <div style="background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.35);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--growth);">
+          ⚠️ <strong>Format Wajib Diikuti.</strong> File harus memiliki kolom dengan nama persis:
+          <code style="display:block;margin-top:8px;background:rgba(0,0,0,0.3);padding:8px 12px;border-radius:6px;font-size:12px;color:#e2e8f0;">
+            order_number | date (YYYY-MM-DD) | customer_name | item_name | quantity | price | amount | review_text | sentiment_score
+          </code>
+          <span style="display:block;margin-top:8px;color:var(--text-secondary);">
+            Unduh <a href="#" onclick="downloadTemplate();return false;" style="color:var(--accent-brand);text-decoration:underline;">template CSV</a> sebagai panduan.
+          </span>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <label class="nav-btn active" style="background:var(--bg-card);border-color:var(--border);color:var(--text-primary);cursor:pointer;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Pilih File
+            <input type="file" id="bulkUploadInput" accept=".csv,.xlsx,.xls" style="display:none;" onchange="handleBulkUploadPreview(event)">
+          </label>
+          <span id="bulkUploadFileName" style="font-size:13px;color:var(--text-secondary);">Belum ada file dipilih</span>
+          <button class="nav-btn" onclick="toggleBulkUploadForm()" style="margin-left:auto;">Batal</button>
+          <button id="btnConfirmBulkUpload" class="nav-btn active" onclick="handleBulkUploadSubmit()" style="background:var(--accent-brand);border-color:var(--accent-brand);color:white;display:none;">
+            ✅ Simpan Semua (${0})
+          </button>
+        </div>
+        <div id="bulkUploadPreview" style="margin-top:16px;display:none;">
+          <h5 style="margin:0 0 8px;color:var(--text-secondary);font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Preview Data (maks. 5 baris pertama)</h5>
+          <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--border);">
+            <table id="bulkPreviewTable" style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead id="bulkPreviewHead" style="background:var(--bg-hover);color:var(--text-secondary);"></thead>
+              <tbody id="bulkPreviewBody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- ADD TRANSACTION FORM (HIDDEN BY DEFAULT) -->
@@ -1709,3 +1753,169 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 });
+
+// ─── Bulk CSV/Excel Upload ────────────────────────────────────
+
+let bulkUploadData = [];
+
+function toggleBulkUploadForm() {
+  const card = document.getElementById('bulkUploadFormCard');
+  const addForm = document.getElementById('addTxFormCard');
+  if (!card) return;
+  const isHidden = card.style.display === 'none';
+  card.style.display = isHidden ? 'block' : 'none';
+  // Close the other form if open
+  if (addForm && isHidden) addForm.style.display = 'none';
+  if (!isHidden) {
+    // Reset on close
+    bulkUploadData = [];
+    const input = document.getElementById('bulkUploadInput');
+    if (input) input.value = '';
+    const fname = document.getElementById('bulkUploadFileName');
+    if (fname) fname.textContent = 'Belum ada file dipilih';
+    const preview = document.getElementById('bulkUploadPreview');
+    if (preview) preview.style.display = 'none';
+    const btn = document.getElementById('btnConfirmBulkUpload');
+    if (btn) btn.style.display = 'none';
+  }
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+  return lines.slice(1).map(line => {
+    const vals = [];
+    let inQuote = false, cur = '';
+    for (let ch of line) {
+      if (ch === '"') { inQuote = !inQuote; continue; }
+      if (ch === ',' && !inQuote) { vals.push(cur.trim()); cur = ''; continue; }
+      cur += ch;
+    }
+    vals.push(cur.trim());
+    const row = {};
+    headers.forEach((h, i) => row[h] = vals[i] !== undefined ? vals[i] : '');
+    return row;
+  });
+}
+
+function handleBulkUploadPreview(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const fname = document.getElementById('bulkUploadFileName');
+  if (fname) fname.textContent = file.name;
+
+  const requiredCols = ['order_number','date','customer_name','item_name','quantity','price','amount','review_text','sentiment_score'];
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    let rows = [];
+
+    if (file.name.endsWith('.csv')) {
+      rows = parseCSV(e.target.result);
+    } else {
+      alert('Format Excel (.xlsx) memerlukan library tambahan. Gunakan file .csv untuk saat ini.');
+      return;
+    }
+
+    if (rows.length === 0) {
+      alert('File tidak memiliki data atau format tidak sesuai.');
+      return;
+    }
+
+    const firstRowKeys = Object.keys(rows[0]).map(k => k.toLowerCase());
+    const missing = requiredCols.filter(c => !firstRowKeys.includes(c));
+    if (missing.length > 0) {
+      alert(`❌ Kolom berikut tidak ditemukan di file: ${missing.join(', ')}\n\nPastikan nama kolom persis sesuai format yang ditentukan.`);
+      return;
+    }
+
+    bulkUploadData = rows.map(r => ({
+      order_number: r['order_number'] || `ORD-IMPORT-${Date.now()}`,
+      date: r['date'] || new Date().toISOString().split('T')[0],
+      customer_name: r['customer_name'] || '',
+      item_name: r['item_name'] || '',
+      quantity: parseInt(r['quantity']) || 1,
+      price: parseFloat(r['price']) || 0,
+      amount: parseFloat(r['amount']) || 0,
+      review_text: r['review_text'] || '',
+      sentiment_score: parseFloat(r['sentiment_score']) || 0
+    }));
+
+    // Show preview
+    const preview = document.getElementById('bulkUploadPreview');
+    const head = document.getElementById('bulkPreviewHead');
+    const body = document.getElementById('bulkPreviewBody');
+    if (preview && head && body) {
+      head.innerHTML = `<tr>${requiredCols.map(c => `<th style="padding:8px 10px;font-weight:600;text-align:left;">${c}</th>`).join('')}</tr>`;
+      body.innerHTML = bulkUploadData.slice(0, 5).map(r =>
+        `<tr style="border-top:1px solid var(--border);">${requiredCols.map(c => `<td style="padding:7px 10px;color:var(--text-primary);">${r[c]}</td>`).join('')}</tr>`
+      ).join('');
+      preview.style.display = 'block';
+    }
+
+    const btn = document.getElementById('btnConfirmBulkUpload');
+    if (btn) {
+      btn.style.display = 'inline-flex';
+      btn.textContent = `✅ Simpan Semua (${bulkUploadData.length} baris)`;
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function handleBulkUploadSubmit() {
+  const session = getSession();
+  if (!session || !session.umkmId) {
+    alert('Sesi tidak valid. Silakan login ulang.');
+    return;
+  }
+
+  if (bulkUploadData.length === 0) {
+    alert('Tidak ada data untuk disimpan. Pilih file CSV terlebih dahulu.');
+    return;
+  }
+
+  const btn = document.getElementById('btnConfirmBulkUpload');
+  if (btn) { btn.disabled = true; btn.textContent = 'Menyimpan...'; }
+
+  try {
+    // Attach umkm_id to each row
+    const rows = bulkUploadData.map(r => ({ ...r, umkm_id: session.umkmId }));
+
+    // Insert in batches of 50
+    const batchSize = 50;
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const batch = rows.slice(i, i + batchSize);
+      const { error } = await supabase.from('transactions').insert(batch);
+      if (error) throw error;
+    }
+
+    // Sync and re-render
+    await syncUMKMData();
+    toggleBulkUploadForm();
+    renderMyBusiness();
+    alert(`✅ Berhasil menyimpan ${rows.length} transaksi!`);
+  } catch (err) {
+    console.error('Bulk upload error:', err);
+    alert('Gagal menyimpan data: ' + err.message);
+    if (btn) { btn.disabled = false; btn.textContent = `✅ Simpan Semua (${bulkUploadData.length} baris)`; }
+  }
+}
+
+function downloadTemplate() {
+  const header = 'order_number,date,customer_name,item_name,quantity,price,amount,review_text,sentiment_score';
+  const sample = [
+    'ORD-001,2026-06-01,Budi Santoso,Nasi Goreng Spesial,2,25000,50000,Makanan enak dan cepat!,0.75',
+    'ORD-002,2026-06-02,Siti Rahayu,Es Teh Manis,1,8000,8000,Minumannya segar.,0.5',
+    'ORD-003,2026-06-03,Joko Widodo,Ayam Bakar Madu,1,35000,35000,Porsi kurang besar tapi rasanya enak.,-0.1'
+  ];
+  const csv = [header, ...sample].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'template_transaksi_uhp.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}

@@ -155,45 +155,83 @@ function generateDemoHistory(umkmId, sector) {
   return history;
 }
 
-// Helper to generate 20 recent transactions
-function generateDemoTransactions(umkmId) {
+// Helper to generate 20 recent transactions with sector-specific data
+function generateDemoTransactions(umkmId, sector) {
   const txs = [];
-  const names = ['Rudi', 'Siti', 'Budi', 'Dewi', 'Joko', 'Ani', 'Eko', 'Sari', 'Giri', 'Yanto', 'Rina', 'Tono', 'Lina', 'Hadi', 'Maya', 'Dian', 'Bimo', 'Indah', 'Agus', 'Soni'];
-  const products = ['Paket Makan Siang', 'Kopi Susu Gula Aren', 'Printer Digital', 'Perawatan Wajah', 'Kerajinan Tas', 'Nasi Goreng Spesial', 'Es Teh Manis', 'Servis Laptop', 'Potong Rambut', 'Masker Organik'];
-  const reviews = [
-    'Sangat puas dengan layanannya, cepat dan ramah!',
-    'Produknya bagus, sesuai dengan deskripsi.',
-    'Pengiriman agak lambat tapi barang sampai dengan selamat.',
-    'Harga bersahabat dan rasanya enak sekali.',
-    'Tempatnya bersih dan nyaman untuk nongkrong.',
-    'Pelayanan ramah tapi antrean agak panjang.',
-    'Kualitas mantap, sudah langganan di sini.',
-    'Suka sekali dengan variasi menunya.',
-    'Rekomendasi untuk yang cari kualitas terbaik.',
-    'Karyawannya sangat membantu dan komunikatif.'
-  ];
+  const names = ['Rudi Santoso', 'Siti Aminah', 'Budi Prasetyo', 'Dewi Rahayu', 'Joko Widodo',
+    'Ani Puspita', 'Eko Wahyono', 'Sari Indrawati', 'Giri Haryanto', 'Yanto Susilo',
+    'Rina Marlina', 'Tono Subagyo', 'Lina Kusuma', 'Hadi Purnomo', 'Maya Saputri',
+    'Dian Permata', 'Bimo Satrio', 'Indah Lestari', 'Agus Wibowo', 'Soni Darmawan'];
+
+  const sectorData = {
+    'Kuliner': {
+      products: ['Nasi Goreng Spesial','Ayam Bakar Madu','Es Teh Manis','Mie Ayam Jumbo','Sate 10 Tusuk','Paket Nasi + Ayam','Jus Alpukat','Gado-gado Komplit','Bakso Kuah Sapi','Pecel Lele'],
+      prices: [25000,35000,8000,20000,30000,45000,15000,22000,18000,28000],
+      posReviews: ['Makanan selalu enak dan porsi besar. Pelayanan cepat dan ramah, harga bersahabat.','Suka sekali dengan ayam bakar dan sambal dadaknya, porsinya juga pas kenyang.','Rasa konsisten dari dulu gak berubah. Sambalnya mantap! Pasti balik lagi.','Tempat makan favorit keluarga! Bersih dan pelayanannya sigap sekali.','Walaupun ramai, antrean teratur dan makanan disajikan hangat. Sangat direkomendasikan!'],
+      negReviews: ['Porsinya agak kurang untuk harganya, tapi rasanya masih enak.','Agak lama nunggu pesanan waktu ramai, tapi worth it.','Sambal kurang pedas untuk selera saya, tapi overall masih oke.']
+    },
+    'Teknologi': {
+      products: ['Servis Laptop','Install Software','Repair Handphone','Setup Jaringan','Konsultasi IT','Cetak Dokumen','Data Recovery','Upgrade RAM','Antivirus Setup','CCTV Instalasi'],
+      prices: [150000,75000,200000,300000,100000,5000,250000,120000,50000,500000],
+      posReviews: ['Pelayanan profesional dan cepat. Laptop saya langsung bisa dipakai lagi tanpa masalah.','Teknisinya ramah dan menjelaskan masalah dengan jelas. Harga juga transparan.','Sangat memuaskan! Data recovery berhasil 100%, terima kasih banyak.','Servis handphone beres dalam 2 jam. Recommended banget untuk masalah teknis.','Tim yang kompeten dan jujur. Tidak memberikan biaya tambahan yang tidak perlu.'],
+      negReviews: ['Sedikit lama estimasi selesainya, tapi hasilnya bagus.','Harga agak mahal tapi sebanding dengan kualitas layanannya.','Antrian cukup panjang, sebaiknya reservasi dulu sebelum datang.']
+    },
+    'Kecantikan': {
+      products: ['Facial Treatment','Manikur Pedikur','Creambath Rambut','Potong Rambut','Hair Coloring','Eyebrow Threading','Body Scrub','Lulur Tradisional','Make Up Natural','Perawatan Kulit'],
+      prices: [120000,85000,100000,45000,200000,35000,150000,175000,250000,130000],
+      posReviews: ['Perawatan wajahnya luar biasa! Kulit langsung terasa lebih lembut dan cerah.','Mbaknya sangat ahli dan ramah. Hasilnya memuaskan, pasti balik lagi!','Creambath terbaik! Rambut jadi lebih sehat dan wangi setelah perawatan di sini.','Tempatnya nyaman dan bersih. Cocok untuk relaksasi sekaligus perawatan.','Hasil make up natural tapi tetap glowing. Terima kasih sudah bikin percaya diri!'],
+      negReviews: ['Antrean lumayan panjang di weekend, tapi hasilnya sepadan.','Harga sedikit lebih mahal dari tempat lain, tapi kualitas premium.','Alat-alatnya sudah bagus, tinggal tambah beberapa koleksi warna.']
+    },
+    'Fashion': {
+      products: ['Kemeja Batik','Dress Casual','Celana Chino','Jilbab Instant','Kaos Polos','Jaket Hoodie','Rok Midi','Tas Tote Bag','Sepatu Sneakers','Aksesoris Set'],
+      prices: [150000,200000,175000,85000,65000,250000,130000,120000,300000,95000],
+      posReviews: ['Kualitas bahan sangat bagus dan jahitan rapi. Ukurannya pun pas di badan.','Model pakaiannya trendy dan harganya worth it. Sudah belanja berkali-kali di sini.','Batiknya cantik sekali! Motifnya unik dan tidak pasaran. Sangat puas.','Pelayanan toko ramah dan membantu memilih ukuran yang tepat. Recommended!','Pengiriman cepat dan packaging rapi. Produk sesuai foto, tidak mengecewakan.'],
+      negReviews: ['Stok warna favorit saya sering habis, harap ditambah variannya.','Sizing agak kecil dari perkiraan, tapi bisa dikembalikan dengan mudah.','Pengiriman kadang agak lama, tapi produknya memang berkualitas.']
+    },
+    'Kerajinan': {
+      products: ['Tas Anyaman','Lukisan Kanvas','Hiasan Dinding','Gelang Manik','Tembikar Hias','Bingkai Foto','Lilin Aromaterapi','Gantungan Kunci','Boneka Rajut','Kotak Perhiasan'],
+      prices: [95000,350000,200000,45000,180000,75000,55000,25000,120000,160000],
+      posReviews: ['Kerajinannya sangat detail dan berkualitas tinggi. Cocok dijadikan hadiah istimewa.','Tas anyamannya kuat dan unik. Banyak yang tanya beli di mana. Love it!','Lukisannya indah sekali, persis seperti yang dipesan. Pengrajinnya sangat berbakat.','Hiasan dindingnya jadi centerpiece rumah saya. Banyak tamu yang memuji.','Produk handmade yang benar-benar terasa nilai seninya. Harga sangat reasonable.'],
+      negReviews: ['Proses pembuatan memang agak lama karena handmade, tapi hasilnya bagus.','Warna sedikit berbeda dari foto, tapi masih cantik dan sesuai ekspektasi.','Packaging perlu ditingkatkan agar produk lebih aman saat dikirim.']
+    },
+    'Jasa': {
+      products: ['Konsultasi Bisnis','Desain Logo','Pembuatan Website','Foto Produk','Akuntansi Bulanan','Training SDM','Audit Laporan','Digital Marketing','Penerjemahan','Pengelolaan Media Sosial'],
+      prices: [200000,500000,2000000,300000,750000,1000000,1500000,800000,150000,600000],
+      posReviews: ['Konsultasinya sangat insight dan membantu bisnis saya berkembang pesat.','Desain logonya profesional dan sesuai visi brand saya. Terima kasih!','Website yang dibuat sangat rapi dan responsif. Tim bekerja dengan deadline ketat.','Foto produk hasilnya elegan banget. Sales langsung naik setelah pakai foto ini.','Laporan akuntansinya akurat dan tepat waktu. Sangat membantu untuk pengambilan keputusan.'],
+      negReviews: ['Revisi desain agak memakan waktu, tapi hasilnya memang memuaskan.','Komunikasi terkadang sedikit lambat, tapi kualitas kerja tidak mengecewakan.','Harga cukup tinggi tapi sebanding dengan profesionalisme tim.']
+    }
+  };
+
+  const data = sectorData[sector] || sectorData['Kuliner'];
+  const now = Date.now();
 
   for (let i = 0; i < 20; i++) {
+    const isPos = Math.random() > 0.25;
     const qty = Math.floor(Math.random() * 3) + 1;
-    const price = (Math.floor(Math.random() * 5) + 1) * 15000;
-    const sentiment = Math.random() > 0.2 ? parseFloat((0.5 + Math.random() * 0.5).toFixed(2)) : parseFloat((-0.5 + Math.random() * 0.5).toFixed(2));
-    const reviewText = sentiment > 0 ? reviews[Math.floor(Math.random() * 5)] : reviews[Math.floor(Math.random() * 5) + 5];
+    const prodIdx = i % data.products.length;
+    const price = data.prices[prodIdx];
+    const sentiment = isPos
+      ? parseFloat((0.3 + Math.random() * 0.65).toFixed(2))
+      : parseFloat((-0.15 - Math.random() * 0.35).toFixed(2));
+    const reviewPool = isPos ? data.posReviews : data.negReviews;
+    const reviewText = reviewPool[i % reviewPool.length];
 
     txs.push({
       umkm_id: umkmId,
-      invoice_no: `INV-${Date.now()}-${i}`,
-      date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      order_number: `ORD-${String(now).slice(-6)}-${String(i + 1).padStart(2, '0')}`,
+      date: new Date(now - i * 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       customer_name: names[i % names.length],
-      product_name: products[i % products.length],
+      item_name: data.products[prodIdx],
       quantity: qty,
       price: price,
-      total_price: qty * price,
-      review: reviewText,
+      amount: qty * price,
+      review_text: reviewText,
       sentiment_score: sentiment
     });
   }
   return txs;
 }
+
 
 // ─── Registration ────────────────────────────────────────────
 async function uhpRegister(email, password, name, umkmName, sector) {
@@ -308,7 +346,7 @@ async function uhpRegister(email, password, name, umkmName, sector) {
     const historyData = generateDemoHistory(umkm.id, sector);
     await supabase.from('umkm_history').insert(historyData);
 
-    const txData = generateDemoTransactions(umkm.id);
+    const txData = generateDemoTransactions(umkm.id, sector);
     await supabase.from('transactions').insert(txData);
 
     // ── Step 6: Build and save full session ──────────────────────
