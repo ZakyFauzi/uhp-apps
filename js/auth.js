@@ -102,6 +102,90 @@ async function uhpLogin(email, password) {
   }
 }
 
+// Helper to generate 17 months of trend history data
+function generateDemoHistory(umkmId, sector) {
+  const history = [];
+  const months = [
+    'Jan 2025', 'Feb 2025', 'Mar 2025', 'Apr 2025', 'Mei 2025', 'Jun 2025',
+    'Jul 2025', 'Agu 2025', 'Sep 2025', 'Okt 2025', 'Nov 2025', 'Des 2025',
+    'Jan 2026', 'Feb 2026', 'Mar 2026', 'Apr 2026', 'Mei 2026'
+  ];
+  
+  let baseRev = 10000000;
+  let baseExp = 6500000;
+  
+  if (sector === 'Kuliner') { baseRev = 15000000; baseExp = 10000000; }
+  else if (sector === 'Teknologi') { baseRev = 22000000; baseExp = 14000000; }
+  else if (sector === 'Kecantikan') { baseRev = 18000000; baseExp = 11500000; }
+  else if (sector === 'Kerajinan Tangan') { baseRev = 8000000; baseExp = 5000000; }
+  else if (sector === 'Fashion') { baseRev = 12000000; baseExp = 8000000; }
+
+  for (let i = 0; i < months.length; i++) {
+    // Generate an upward trend with a dip in the middle
+    const monthTrend = 1 + (i * 0.04) + (Math.sin(i * 0.8) * 0.1) + (Math.random() * 0.08 - 0.04);
+    const revenue = Math.round(baseRev * monthTrend);
+    const expenses = Math.round(baseExp * (monthTrend * 0.92));
+    const transactions = Math.round(80 + (i * 4) + (Math.sin(i) * 10) + (Math.random() * 10 - 5));
+    const sentiment = parseFloat((0.4 + (Math.random() * 0.4) + (monthTrend * 0.05)).toFixed(2));
+    
+    let currentClass = 'Growth';
+    const npm = (revenue - expenses) / revenue;
+    if (npm > 0.35) currentClass = 'Elite';
+    else if (npm < 0.15) currentClass = 'Struggling';
+    
+    history.push({
+      umkm_id: umkmId,
+      month: months[i],
+      revenue,
+      expenses,
+      transactions,
+      sentiment,
+      class: currentClass
+    });
+  }
+  return history;
+}
+
+// Helper to generate 20 recent transactions
+function generateDemoTransactions(umkmId) {
+  const txs = [];
+  const names = ['Rudi', 'Siti', 'Budi', 'Dewi', 'Joko', 'Ani', 'Eko', 'Sari', 'Giri', 'Yanto', 'Rina', 'Tono', 'Lina', 'Hadi', 'Maya', 'Dian', 'Bimo', 'Indah', 'Agus', 'Soni'];
+  const products = ['Paket Makan Siang', 'Kopi Susu Gula Aren', 'Printer Digital', 'Perawatan Wajah', 'Kerajinan Tas', 'Nasi Goreng Spesial', 'Es Teh Manis', 'Servis Laptop', 'Potong Rambut', 'Masker Organik'];
+  const reviews = [
+    'Sangat puas dengan layanannya, cepat dan ramah!',
+    'Produknya bagus, sesuai dengan deskripsi.',
+    'Pengiriman agak lambat tapi barang sampai dengan selamat.',
+    'Harga bersahabat dan rasanya enak sekali.',
+    'Tempatnya bersih dan nyaman untuk nongkrong.',
+    'Pelayanan ramah tapi antrean agak panjang.',
+    'Kualitas mantap, sudah langganan di sini.',
+    'Suka sekali dengan variasi menunya.',
+    'Rekomendasi untuk yang cari kualitas terbaik.',
+    'Karyawannya sangat membantu dan komunikatif.'
+  ];
+
+  for (let i = 0; i < 20; i++) {
+    const qty = Math.floor(Math.random() * 3) + 1;
+    const price = (Math.floor(Math.random() * 5) + 1) * 15000;
+    const sentiment = Math.random() > 0.2 ? parseFloat((0.5 + Math.random() * 0.5).toFixed(2)) : parseFloat((-0.5 + Math.random() * 0.5).toFixed(2));
+    const reviewText = sentiment > 0 ? reviews[Math.floor(Math.random() * 5)] : reviews[Math.floor(Math.random() * 5) + 5];
+
+    txs.push({
+      umkm_id: umkmId,
+      invoice_no: `INV-${Date.now()}-${i}`,
+      date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      customer_name: names[i % names.length],
+      product_name: products[i % products.length],
+      quantity: qty,
+      price: price,
+      total_price: qty * price,
+      review: reviewText,
+      sentiment_score: sentiment
+    });
+  }
+  return txs;
+}
+
 // ─── Registration ────────────────────────────────────────────
 async function uhpRegister(email, password, name, umkmName, sector) {
   if (!email || !password || !name || !umkmName || !sector) {
@@ -146,7 +230,7 @@ async function uhpRegister(email, password, name, umkmName, sector) {
         name: umkmName.trim(),
         sector: sector,
         location: 'Indonesia',
-        tenure: 1,
+        tenure: 17, // 17 months of history
         current_class: 'Growth'
       })
       .select()
@@ -157,24 +241,27 @@ async function uhpRegister(email, password, name, umkmName, sector) {
       return { success: false, error: '❌ Akun terdaftar, namun gagal membuat profil UMKM Anda: ' + umkmErr.message };
     }
 
-    // 3. Insert default history month (e.g. current month)
+    // 3. Insert 17 months of trend history data
+    const historyData = generateDemoHistory(umkm.id, sector);
     const { error: histErr } = await supabase
       .from('umkm_history')
-      .insert({
-        umkm_id: umkm.id,
-        month: 'Mei 2026',
-        revenue: 5000000,
-        expenses: 4000000,
-        transactions: 10,
-        sentiment: 0.0,
-        class: 'Growth'
-      });
+      .insert(historyData);
 
     if (histErr) {
       console.warn('Initial history seeding failed:', histErr);
     }
 
-    // 4. Create and save session
+    // 4. Insert 20 recent transactions
+    const txData = generateDemoTransactions(umkm.id);
+    const { error: txErr } = await supabase
+      .from('transactions')
+      .insert(txData);
+
+    if (txErr) {
+      console.warn('Initial transaction seeding failed:', txErr);
+    }
+
+    // 5. Create and save session
     const session = {
       userId: user.id,
       name: name.trim(),
@@ -186,14 +273,7 @@ async function uhpRegister(email, password, name, umkmName, sector) {
       location: umkm.location,
       tenure: umkm.tenure,
       currentClass: umkm.current_class,
-      history: [{
-        month: 'Mei 2026',
-        revenue: 5000000,
-        expenses: 4000000,
-        transactions: 10,
-        sentiment: 0.0,
-        class: 'Growth'
-      }],
+      history: historyData,
       loginAt: Date.now()
     };
 
