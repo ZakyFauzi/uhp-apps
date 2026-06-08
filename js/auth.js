@@ -9,11 +9,14 @@ const AUTH_SESSION_KEY = 'uhp_session';
 
 const supabaseUrl = 'https://cgcvpcqxxmhcoxshldwa.supabase.co';
 const supabaseKey = 'sb_publishable_ktImoxqyVD1W1uMa9rs64A_X9GRzmLb';
-let supabase = null;
+
+// Save the SDK reference to avoid global let variable declaration conflict
+const _supabaseSDK = window.supabase;
+var supabase = null;
 
 // Initialize Supabase client
-if (window.supabase) {
-  supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+if (_supabaseSDK) {
+  supabase = _supabaseSDK.createClient(supabaseUrl, supabaseKey);
 } else {
   console.warn('[UHP Auth] Supabase Client SDK not found. Include CDN in HTML.');
 }
@@ -26,8 +29,14 @@ function translateAuthError(msg) {
   if (msg.includes('Invalid login credentials') || msg.includes('invalid claim')) {
     return 'Email atau password salah. Cek kembali.';
   }
+  if (msg.includes('Email not confirmed') || msg.includes('email_not_confirmed') || msg.includes('not confirmed')) {
+    return 'Email belum dikonfirmasi. Silakan periksa inbox email Anda.';
+  }
   if (msg.includes('Password should be')) {
     return 'Password terlalu pendek. Minimal harus 6 karakter.';
+  }
+  if (msg.includes('over_email_send_rate_limit') || msg.includes('rate limit')) {
+    return 'Terlalu banyak permintaan. Tunggu beberapa menit dan coba lagi.';
   }
   return msg;
 }
@@ -195,42 +204,80 @@ async function uhpRegister(email, password, name, umkmName, sector) {
     return { success: false, error: '❌ Supabase SDK gagal dimuat. Coba muat ulang.' };
   }
 
-  // Basic validation
   if (password.length < 6) {
     return { success: false, error: '❌ Password minimal terdiri dari 6 karakter.' };
   }
 
   try {
-    // 1. Sign up user
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
+    const cleanEmail = email.trim().toLowerCase();
+
+    // ── Step 1: Sign up ────────────────────────────────────────
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: cleanEmail,
       password: password,
-      options: {
-        data: { name: name.trim() }
-      }
+      options: { data: { name: name.trim() } }
     });
 
-    if (error) {
-      return { success: false, error: '❌ ' + translateAuthError(error.message) };
+    if (signUpError) {
+      return { success: false, error: '❌ ' + translateAuthError(signUpError.message) };
     }
 
-    const user = data.user;
-    if (!user) {
-      return { success: false, error: '❌ Terjadi kegagalan saat mendaftarkan akun baru.' };
+    // data.user exists even when email confirmation is required
+    const user = signUpData.user;
+    if (!user || !user.id) {
+      return { success: false, error: '❌ Pendaftaran gagal. Email mungkin sudah terdaftar.' };
     }
 
-    // Wait briefly for the DB trigger to populate the profiles table
-    await new Promise(r => setTimeout(r, 600));
+    // ── Step 2: Sign in to get an active session for DB inserts ─
+    // This works even if email confirmation is OFF (default for new projects).
+    // If email confirmation IS on, signIn will fail — we handle that too.
+    let activeUserId = user.id;
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password: password
+    });
 
-    // 2. Insert UMKM profile
+    const sessionActive = !signInError && signInData?.session;
+    if (!sessionActive) {
+      // Email confirmation is enabled. The user row exists in auth.users
+      // with the correct ID, but we can't insert into RLS-protected tables
+      // without a session. We'll store minimal session and redirect.
+      console.warn('[UHP Auth] Email confirmation may be required. Session not immediately available.');
+      const minimalSession = {
+        userId: activeUserId,
+        name: name.trim(),
+        email: cleanEmail,
+        avatar: name.trim().charAt(0).toUpperCase(),
+        umkmId: null,
+        umkmName: umkmName.trim(),
+        sector: sector,
+        location: 'Indonesia',
+        tenure: 17,
+        currentClass: 'Growth',
+        history: [],
+        loginAt: Date.now(),
+        needsEmailConfirm: true
+      };
+      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(minimalSession));
+      return {
+        success: true,
+        needsEmailConfirm: true,
+        session: minimalSession
+      };
+    }
+
+    // ── Step 3: Wait for DB trigger to create profiles row ──────
+    await new Promise(r => setTimeout(r, 800));
+
+    // ── Step 4: Insert UMKM profile ─────────────────────────────
     const { data: umkm, error: umkmErr } = await supabase
       .from('umkm_profiles')
       .insert({
-        user_id: user.id,
+        user_id: activeUserId,
         name: umkmName.trim(),
         sector: sector,
         location: 'Indonesia',
-        tenure: 17, // 17 months of history
+        tenure: 17,
         current_class: 'Growth'
       })
       .select()
@@ -238,34 +285,37 @@ async function uhpRegister(email, password, name, umkmName, sector) {
 
     if (umkmErr) {
       console.error('UMKM Profile creation error:', umkmErr);
-      return { success: false, error: '❌ Akun terdaftar, namun gagal membuat profil UMKM Anda: ' + umkmErr.message };
+      // Still return success but without full data
+      const partialSession = {
+        userId: activeUserId,
+        name: name.trim(),
+        email: cleanEmail,
+        avatar: name.trim().charAt(0).toUpperCase(),
+        umkmId: null,
+        umkmName: umkmName.trim(),
+        sector: sector,
+        location: 'Indonesia',
+        tenure: 17,
+        currentClass: 'Growth',
+        history: [],
+        loginAt: Date.now()
+      };
+      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(partialSession));
+      return { success: true, session: partialSession };
     }
 
-    // 3. Insert 17 months of trend history data
+    // ── Step 5: Seed demo history & transactions ─────────────────
     const historyData = generateDemoHistory(umkm.id, sector);
-    const { error: histErr } = await supabase
-      .from('umkm_history')
-      .insert(historyData);
+    await supabase.from('umkm_history').insert(historyData);
 
-    if (histErr) {
-      console.warn('Initial history seeding failed:', histErr);
-    }
-
-    // 4. Insert 20 recent transactions
     const txData = generateDemoTransactions(umkm.id);
-    const { error: txErr } = await supabase
-      .from('transactions')
-      .insert(txData);
+    await supabase.from('transactions').insert(txData);
 
-    if (txErr) {
-      console.warn('Initial transaction seeding failed:', txErr);
-    }
-
-    // 5. Create and save session
+    // ── Step 6: Build and save full session ──────────────────────
     const session = {
-      userId: user.id,
+      userId: activeUserId,
       name: name.trim(),
-      email: user.email,
+      email: cleanEmail,
       avatar: name.trim().charAt(0).toUpperCase(),
       umkmId: umkm.id,
       umkmName: umkm.name,
@@ -282,7 +332,7 @@ async function uhpRegister(email, password, name, umkmName, sector) {
 
   } catch (err) {
     console.error('[UHP Auth] Registration exception:', err);
-    return { success: false, error: '❌ Terjadi kesalahan saat mendaftarkan akun Anda.' };
+    return { success: false, error: '❌ Terjadi kesalahan jaringan saat mendaftar. Coba lagi.' };
   }
 }
 

@@ -282,8 +282,17 @@
       const result = await uhpRegister(email, password, name, umkmName, sector);
 
       if (result.success) {
-        // Redirect ke dashboard
-        window.location.href = 'dashboard.html';
+        if (result.needsEmailConfirm) {
+          // Email confirmation is enabled — show info message
+          errEl.style.color = '#34d399';
+          errEl.textContent = '✅ Akun berhasil dibuat! Silakan cek email Anda untuk konfirmasi, lalu login.';
+          errEl.classList.add('show');
+          btn.classList.remove('loading');
+          setTimeout(() => { window.location.href = 'login.html'; }, 4000);
+        } else {
+          // Fully registered and signed in — go to dashboard
+          window.location.href = 'dashboard.html';
+        }
       } else {
         // Display error from server/backend
         errEl.textContent = result.error;
