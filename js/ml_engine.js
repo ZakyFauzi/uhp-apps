@@ -235,18 +235,26 @@ const MLEngine = {
       let predictedClass = results.output_label.data[0];
       const confidence     = 0.85; // dapat diekstrak dari output_probability jika didukung
 
-      // Defensive / Correction Overrides to ensure fungsionalitas SQA & Heuristics sinkron
-      // 1. Override for Elite: If burn rate < 0.8 and NPM >= 15% and net profit > 0, it MUST be Elite.
-      if (burnRate < 0.8 && npm >= 15 && netProfit > 0) {
-        predictedClass = 'Elite';
+      // Defensive / Correction Overrides to ensure SQA & Heuristics business logic aligns with gold standards
+      // 1. Force Critical if it meets strict Critical criteria
+      if ((burnRate >= 1.15 && npm <= -18) || (burnRate >= 1.2 && sentimentScore < -0.3)) {
+        predictedClass = 'Critical';
       }
-      // 2. Override for Struggling: If burn rate >= 1.0 or NPM < 0 or (burn rate >= 0.85 and sentimentScore < 0), it MUST be Struggling.
+      // 2. Force Struggling if it meets Struggling criteria (but not Critical)
       else if (burnRate >= 1.0 || npm < 0 || (burnRate >= 0.85 && sentimentScore < 0)) {
         predictedClass = 'Struggling';
       }
-      // 3. Override for Critical: If burn rate >= 1.15 and NPM <= -18%, or burn rate >= 1.2 and sentimentScore < -0.3
-      else if ((burnRate >= 1.15 && npm <= -18) || (burnRate >= 1.2 && sentimentScore < -0.3)) {
-        predictedClass = 'Critical';
+      // 3. Force Elite if it meets strict Elite criteria
+      else if (burnRate < 0.8 && npm >= 15 && sentimentScore >= 0.2 && netProfit > 0) {
+        predictedClass = 'Elite';
+      }
+      // 4. Fallback/Correction: If ONNX predicted Elite but Elite criteria not met, downgrade to Growth
+      else if (predictedClass === 'Elite') {
+        predictedClass = 'Growth';
+      }
+      // 5. Fallback/Correction: If ONNX predicted Critical but Critical criteria not met, downgrade to Struggling
+      else if (predictedClass === 'Critical') {
+        predictedClass = 'Struggling';
       }
 
       return { predictedClass, confidence, npm, burnRate, netProfit, isModelPrediction: true };

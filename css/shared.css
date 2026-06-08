@@ -5,40 +5,40 @@
 
 /* --- Tokens & Variables --- */
 :root {
-  --bg-base: #0a0e17;
-  --bg-panel: #111722;
-  --bg-surface: #161d2d;
-  --bg-elevated: #1c2538;
-  --bg-hover: #212d42;
+  --bg-base: #f8fafc;
+  --bg-panel: #ffffff;
+  --bg-surface: #f1f5f9;
+  --bg-elevated: #e2e8f0;
+  --bg-hover: #cbd5e1;
 
-  --border-subtle: rgba(255,255,255,0.06);
-  --border-strong: rgba(255,255,255,0.12);
+  --border-subtle: rgba(15, 23, 42, 0.05);
+  --border-strong: rgba(15, 23, 42, 0.08);
 
-  --text-primary: #e8edf5;
-  --text-secondary: #8899b4;
-  --text-muted: #4d607a;
-  --text-inverse: #0a0e17;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-inverse: #ffffff;
 
-  --accent-brand: #3b82f6;
-  --accent-brand-dim: rgba(59, 130, 246, 0.15);
-  --accent-brand-glow: rgba(59, 130, 246, 0.4);
+  --accent-brand: #2563eb;
+  --accent-brand-dim: rgba(37, 99, 235, 0.08);
+  --accent-brand-glow: rgba(37, 99, 235, 0.2);
 
   /* Status Colors */
-  --elite: #00e676;
-  --elite-dim: rgba(0, 230, 118, 0.12);
-  --elite-glow: rgba(0, 230, 118, 0.4);
+  --elite: #10b981;
+  --elite-dim: rgba(16, 185, 129, 0.1);
+  --elite-glow: rgba(16, 185, 129, 0.25);
 
-  --growth: #60a5fa;
-  --growth-dim: rgba(96, 165, 250, 0.12);
-  --growth-glow: rgba(96, 165, 250, 0.4);
+  --growth: #0284c7;
+  --growth-dim: rgba(2, 132, 199, 0.08);
+  --growth-glow: rgba(2, 132, 199, 0.2);
 
-  --struggling: #fbbf24;
-  --struggling-dim: rgba(251, 191, 36, 0.12);
-  --struggling-glow: rgba(251, 191, 36, 0.4);
+  --struggling: #d97706;
+  --struggling-dim: rgba(217, 119, 6, 0.08);
+  --struggling-glow: rgba(217, 119, 6, 0.25);
 
-  --critical: #f87171;
-  --critical-dim: rgba(248, 113, 113, 0.12);
-  --critical-glow: rgba(248, 113, 113, 0.4);
+  --critical: #dc2626;
+  --critical-dim: rgba(220, 38, 38, 0.08);
+  --critical-glow: rgba(220, 38, 38, 0.25);
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -46,8 +46,8 @@
   --radius-xl: 20px;
 
   --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
-  --shadow-glow: 0 0 32px;
+  --shadow-card: 0 10px 30px -5px rgba(15, 23, 42, 0.08), 0 4px 12px -4px rgba(15, 23, 42, 0.03);
+  --shadow-glow: 0 0 24px;
   --transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
 }
 
@@ -90,11 +90,12 @@ button { cursor: pointer; font-family: var(--font); }
 
 /* --- Glassmorphism Card --- */
 .glass-card {
-  background: rgba(17, 23, 34, 0.7);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
 }
 
 /* --- Common Button --- */

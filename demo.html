@@ -42,10 +42,6 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Analisis
       </button>
-      <button class="nav-btn" id="navData" onclick="switchTab('data')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-        Data Explorer
-      </button>
       <button class="nav-btn" id="navChat" onclick="switchTab('chat')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Ask UHePi
@@ -247,72 +243,7 @@
       </button>
     </div>
 
-    <!-- ====== TAB: DATA EXPLORER ====== -->
-    <section class="tab-panel" id="tabData">
-      <div class="explorer-layout">
-        <div class="explorer-header">
-          <h2 class="explorer-title">Data Explorer</h2>
-          <p class="explorer-desc">Dataset sampel UMKM — 15 entri bisnis</p>
-          <div class="explorer-stats">
-            <div class="exp-stat-card elite-border">
-              <div class="exp-stat-num elite-color" id="expElite">—</div>
-              <div class="exp-stat-label">Elite</div>
-              <div class="exp-stat-bar"><div class="exp-bar-fill elite-bg" id="expEliteBar"></div></div>
-            </div>
-            <div class="exp-stat-card growth-border">
-              <div class="exp-stat-num growth-color" id="expGrowth">—</div>
-              <div class="exp-stat-label">Growth</div>
-              <div class="exp-bar-fill growth-bg" id="expGrowthBar" style="height:4px;border-radius:2px;width:0%;margin-top:6px;"></div>
-            </div>
-            <div class="exp-stat-card struggling-border">
-              <div class="exp-stat-num struggling-color" id="expStruggling">—</div>
-              <div class="exp-stat-label">Struggling</div>
-              <div class="exp-bar-fill struggling-bg" id="expStrugglingBar" style="height:4px;border-radius:2px;width:0%;margin-top:6px;"></div>
-            </div>
-            <div class="exp-stat-card critical-border">
-              <div class="exp-stat-num critical-color" id="expCritical">—</div>
-              <div class="exp-stat-label">Critical</div>
-              <div class="exp-bar-fill critical-bg" id="expCriticalBar" style="height:4px;border-radius:2px;width:0%;margin-top:6px;"></div>
-            </div>
-          </div>
-        </div>
 
-        <div class="filter-bar">
-          <div class="search-wrapper">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" class="search-input" id="searchInput" placeholder="Cari ulasan, kelas..." oninput="filterData()" />
-          </div>
-          <select class="filter-select" id="classFilter" onchange="filterData()">
-            <option value="">Semua Kelas</option>
-            <option value="Elite">Elite</option>
-            <option value="Growth">Growth</option>
-            <option value="Struggling">Struggling</option>
-            <option value="Critical">Critical</option>
-          </select>
-          <span class="filter-count" id="filterCount">—</span>
-        </div>
-
-        <div class="table-wrapper">
-          <table class="data-table" id="dataTable">
-            <thead>
-              <tr>
-                <th>ID</th><th>Revenue</th><th>NPM %</th><th>Burn Rate</th>
-                <th>Transaksi</th><th>Rating</th><th>Sentimen</th><th>Kelas</th><th>Ulasan</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody">
-              <tr><td colspan="9" class="table-loading">Memuat data...</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="pagination" id="pagination">
-          <button class="page-btn" id="prevBtn" onclick="changePage(-1)">← Sebelumnya</button>
-          <span class="page-info" id="pageInfo">Halaman 1</span>
-          <button class="page-btn" id="nextBtn" onclick="changePage(1)">Berikutnya →</button>
-        </div>
-      </div>
-    </section>
 
     <!-- ====== TAB: CHAT (UHePi) ====== -->
     <section class="tab-panel" id="tabChat">
