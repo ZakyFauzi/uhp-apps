@@ -899,6 +899,7 @@ function renderMyBusiness() {
   // Revenue chart bars (normalized)
   const maxRev = Math.max(...umkm.history.map(h => h.revenue));
   const historyBars = umkm.history.map(h => {
+    console.log("panjang data", latest);
     const height = (h.revenue / maxRev * 120) + 8;
     const barColor = CLASS_COLORS[h.class] || 'var(--accent-brand)';
     return `
@@ -908,6 +909,36 @@ function renderMyBusiness() {
         <div class="history-bar-label">${h.month.split(' ')[0]}</div>
       </div>`;
   }).join('');
+
+  // Prepare recent review summary (use last up to 6 months from history)
+  const recentHistory = umkm.history.slice(-6);
+  const recentSummaryItems = recentHistory.map(h => ({
+    month: h.month,
+    sentiment: typeof h.sentiment === 'number' ? h.sentiment : 0,
+    transactions: h.transactions || 0,
+    cls: h.class || umkm.currentClass
+  }));
+
+  // Collect multiple reviews to show (prioritize umkm.reviews, then uploadedReviews, then recentReview)
+  let rawReviews = [];
+  if (Array.isArray(umkm.reviews) && umkm.reviews.length) {
+    rawReviews = umkm.reviews.slice();
+  } else if (uploadedReviews && uploadedReviews.length) {
+    rawReviews = uploadedReviews.slice();
+  } else if (umkm.recentReview) {
+    rawReviews = [umkm.recentReview];
+  }
+
+  // Normalize reviews into objects { text, month? }
+  const reviewsNormalized = rawReviews.map(r => {
+    if (!r) return null;
+    if (typeof r === 'string') return { text: r };
+    if (typeof r === 'object') return { text: r.text || r.review || '', month: r.month };
+    return null;
+  }).filter(Boolean);
+
+  // Limit to representative reviews (prefer showing most recent)
+  const reviewsToShow = reviewsNormalized.slice(-4).reverse();
 
   container.innerHTML = `
     <div class="mybiz-profile" style="--badge-color:${classColor}">
@@ -944,13 +975,54 @@ function renderMyBusiness() {
     </div>
 
     <div class="mybiz-history">
-      <h3>📈 Tren Revenue Bulanan</h3>
+      <h3>📈 Tren Revenue Bulanan (menampilkan ${umkm.history.length} bulan terakhir)</h3>
       <div class="history-chart">${historyBars}</div>
     </div>
 
     <div class="mybiz-review">
-      <h3>💬 Ulasan Terakhir</h3>
-      <div class="mybiz-review-text">"${umkm.recentReview}"</div>
+      <h3>💬 Ulasan & Ringkasan</h3>
+      <div class="mybiz-review-grid">
+        <div class="mybiz-review-main">
+          <h4>Ulasan Pelanggan Terpilih</h4>
+          <div class="reviews-list-container">
+            ${reviewsToShow.length > 0 ? reviewsToShow.map(rv => {
+              const score = (typeof computeSentiment === 'function') ? computeSentiment(rv.text).score : 0;
+              const badgeColor = score >= 0.2 ? 'var(--elite)' : score <= -0.15 ? 'var(--critical)' : 'var(--growth)';
+              const emoji = score >= 0.2 ? '🙂' : score <= -0.15 ? '😟' : '😐';
+              const label = score >= 0.2 ? 'Positif' : score <= -0.15 ? 'Negatif' : 'Netral';
+              return `
+              <div class="mybiz-review-card">
+                <div class="mybiz-review-badge" style="background:${badgeColor}15; color:${badgeColor};">
+                  <span>${emoji}</span>
+                  <span class="mybiz-review-sentiment-label">${label} (${(score >= 0 ? '+' : '') + score.toFixed(2)})</span>
+                </div>
+                <div class="mybiz-review-card-text">"${rv.text}"</div>
+                ${rv.month ? `<div class="mybiz-review-card-meta">${rv.month}</div>` : ''}
+              </div>`;
+            }).join('') : `<div class="no-reviews" style="color:var(--text-muted)">Belum ada ulasan untuk bisnis ini.</div>`}
+          </div>
+        </div>
+        <div class="mybiz-review-side">
+          <div class="mybiz-review-summary">
+            <h4>Ringkasan 6 Bulan Terakhir</h4>
+            <div class="summary-timeline">
+              ${recentSummaryItems.slice().reverse().map(r => {
+                const badgeClass = `class-badge class-${r.cls.toLowerCase()}`;
+                const sentColor = r.sentiment >= 0.2 ? 'var(--elite)' : r.sentiment <= -0.15 ? 'var(--critical)' : 'var(--growth)';
+                return `
+                <div class="timeline-item">
+                  <div class="timeline-month"><strong>${r.month}</strong></div>
+                  <div class="timeline-details">
+                    <span class="${badgeClass}">${r.cls}</span>
+                    <span class="timeline-stat">🛒 ${r.transactions} trx</span>
+                    <span class="timeline-stat" style="color:${sentColor}">💬 ${(r.sentiment >= 0 ? '+' : '') + r.sentiment.toFixed(2)}</span>
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   `;
 }

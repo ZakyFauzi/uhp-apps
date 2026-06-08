@@ -86,14 +86,21 @@ const UHP_UMKM_PROFILES = {
     tenure: 84,
     currentClass: 'Elite',
     history: [
-      { month: 'Nov 2025', revenue: 18500000, expenses: 11800000, transactions: 145, sentiment: 0.72, class: 'Elite' },
-      { month: 'Des 2025', revenue: 21000000, expenses: 13200000, transactions: 168, sentiment: 0.68, class: 'Elite' },
-      { month: 'Jan 2026', revenue: 19200000, expenses: 12500000, transactions: 152, sentiment: 0.75, class: 'Elite' },
-      { month: 'Feb 2026', revenue: 20500000, expenses: 13000000, transactions: 160, sentiment: 0.70, class: 'Elite' },
-      { month: 'Mar 2026', revenue: 22000000, expenses: 13800000, transactions: 175, sentiment: 0.78, class: 'Elite' },
-      { month: 'Apr 2026', revenue: 21500000, expenses: 13500000, transactions: 170, sentiment: 0.74, class: 'Elite' },
+      { month: 'Des 2025', revenue: 18500000, expenses: 11800000, transactions: 145, sentiment: 0.72, class: 'Elite' },
+      { month: 'Jan 2026', revenue: 21000000, expenses: 13200000, transactions: 168, sentiment: 0.68, class: 'Elite' },
+      { month: 'Feb 2026', revenue: 19200000, expenses: 12500000, transactions: 152, sentiment: 0.75, class: 'Elite' },
+      { month: 'Mar 2026', revenue: 20500000, expenses: 13000000, transactions: 160, sentiment: 0.70, class: 'Elite' },
+      { month: 'Apr 2026', revenue: 22000000, expenses: 13800000, transactions: 175, sentiment: 0.78, class: 'Elite' },
+      { month: 'May 2026', revenue: 21500000, expenses: 13500000, transactions: 170, sentiment: 0.74, class: 'Elite' },
     ],
     recentReview: 'Makanan selalu enak dan porsi besar. Pelayanan cepat dan ramah, harga bersahabat.',
+    reviews: [
+      'Makanan selalu enak dan porsi besar. Pelayanan cepat dan ramah, harga bersahabat.',
+      'Tempat makan favorit keluarga! Bersih dan pelayanannya sigap sekali.',
+      'Rasa konsisten dari dulu gak berubah. Sambalnya mantap!',
+      'Suka sekali dengan ayam bakar dan sambal dadaknya, porsinya juga pas kenyang.',
+      'Walaupun ramai, antrean teratur dan makanan disajikan hangat. Sangat direkomendasikan!'
+    ]
   },
   umkm_002: {
     name: 'Tech Supplies Zaky',
@@ -102,14 +109,21 @@ const UHP_UMKM_PROFILES = {
     tenure: 48,
     currentClass: 'Growth',
     history: [
-      { month: 'Nov 2025', revenue: 9500000, expenses: 7200000, transactions: 95, sentiment: 0.35, class: 'Growth' },
-      { month: 'Des 2025', revenue: 11000000, expenses: 8500000, transactions: 110, sentiment: 0.30, class: 'Growth' },
-      { month: 'Jan 2026', revenue: 8800000, expenses: 7000000, transactions: 88, sentiment: 0.28, class: 'Growth' },
-      { month: 'Feb 2026', revenue: 10200000, expenses: 7800000, transactions: 102, sentiment: 0.40, class: 'Growth' },
-      { month: 'Mar 2026', revenue: 12500000, expenses: 9200000, transactions: 125, sentiment: 0.45, class: 'Growth' },
-      { month: 'Apr 2026', revenue: 11800000, expenses: 8800000, transactions: 118, sentiment: 0.38, class: 'Growth' },
+      { month: 'Des 2025', revenue: 9500000, expenses: 7200000, transactions: 95, sentiment: 0.35, class: 'Growth' },
+      { month: 'Jan 2026', revenue: 11000000, expenses: 8500000, transactions: 110, sentiment: 0.30, class: 'Growth' },
+      { month: 'Feb 2026', revenue: 8800000, expenses: 7000000, transactions: 88, sentiment: 0.28, class: 'Growth' },
+      { month: 'Mar 2026', revenue: 10200000, expenses: 7800000, transactions: 102, sentiment: 0.40, class: 'Growth' },
+      { month: 'Apr 2026', revenue: 12500000, expenses: 9200000, transactions: 125, sentiment: 0.45, class: 'Growth' },
+      { month: 'May 2026', revenue: 11800000, expenses: 8800000, transactions: 118, sentiment: 0.38, class: 'Growth' },
     ],
     recentReview: 'Harga kompetitif dan produk original. Pengiriman kadang sedikit lambat tapi overall oke.',
+    reviews: [
+      'Harga kompetitif dan produk original. Pengiriman kadang sedikit lambat tapi overall oke.',
+      'Pelayanan CS responsif menjawab pertanyaan teknis. Packing sangat aman dengan bubble wrap tebal.',
+      'Barang sampai dengan selamat dan berfungsi baik, cuma pengiriman kurir ekspedisi agak lama.',
+      'Kualitas produk original bergaransi resmi. Harganya juga lebih murah dibanding toko lain.',
+      'Pelayanan ramah, tapi stok barang yang ada di etalase kadang tidak terupdate.'
+    ]
   },
   umkm_003: {
     name: 'Brama Coffee House',
@@ -118,14 +132,21 @@ const UHP_UMKM_PROFILES = {
     tenure: 30,
     currentClass: 'Growth',
     history: [
-      { month: 'Nov 2025', revenue: 7200000, expenses: 5800000, transactions: 72, sentiment: 0.25, class: 'Struggling' },
-      { month: 'Des 2025', revenue: 8500000, expenses: 6200000, transactions: 85, sentiment: 0.32, class: 'Growth' },
-      { month: 'Jan 2026', revenue: 7800000, expenses: 6000000, transactions: 78, sentiment: 0.30, class: 'Growth' },
-      { month: 'Feb 2026', revenue: 9000000, expenses: 6500000, transactions: 90, sentiment: 0.42, class: 'Growth' },
-      { month: 'Mar 2026', revenue: 9500000, expenses: 6800000, transactions: 95, sentiment: 0.48, class: 'Growth' },
-      { month: 'Apr 2026', revenue: 10200000, expenses: 7200000, transactions: 102, sentiment: 0.45, class: 'Growth' },
+      { month: 'Des 2025', revenue: 7200000, expenses: 5800000, transactions: 72, sentiment: 0.25, class: 'Struggling' },
+      { month: 'Jan 2026', revenue: 8500000, expenses: 6200000, transactions: 85, sentiment: 0.32, class: 'Growth' },
+      { month: 'Feb 2026', revenue: 7800000, expenses: 6000000, transactions: 78, sentiment: 0.30, class: 'Growth' },
+      { month: 'Mar 2026', revenue: 9000000, expenses: 6500000, transactions: 90, sentiment: 0.42, class: 'Growth' },
+      { month: 'Apr 2026', revenue: 9500000, expenses: 6800000, transactions: 95, sentiment: 0.48, class: 'Growth' },
+      { month: 'May 2026', revenue: 10200000, expenses: 7200000, transactions: 102, sentiment: 0.45, class: 'Growth' },
     ],
     recentReview: 'Kopi enak dan tempat nyaman untuk bekerja. Menu makanan ringannya juga oke. Semoga makin berkembang!',
+    reviews: [
+      'Kopi enak dan tempat nyaman untuk bekerja. Menu makanan ringannya juga oke. Semoga makin berkembang!',
+      'Suasana tenang, wifi kencang. Cocok sekali buat nugas atau wfh sore-sore.',
+      'Pilihan kopinya bervariasi, tapi tempat parkir motornya agak sempit kalau lagi jam ramai.',
+      'Makanan dan minuman enak, harga mahasiswa. Pelayanannya cepat dan baristanya ramah.',
+      'Tempatnya aesthetic dan cozy, cuma colokan listrik di meja bagian luar agak sedikit.'
+    ]
   },
   umkm_004: {
     name: 'Ghifary Digital Print',
@@ -134,14 +155,21 @@ const UHP_UMKM_PROFILES = {
     tenure: 18,
     currentClass: 'Struggling',
     history: [
-      { month: 'Nov 2025', revenue: 5200000, expenses: 5500000, transactions: 52, sentiment: -0.10, class: 'Struggling' },
-      { month: 'Des 2025', revenue: 6800000, expenses: 6200000, transactions: 68, sentiment: 0.05, class: 'Growth' },
-      { month: 'Jan 2026', revenue: 4500000, expenses: 5000000, transactions: 45, sentiment: -0.15, class: 'Struggling' },
-      { month: 'Feb 2026', revenue: 5000000, expenses: 5200000, transactions: 50, sentiment: -0.08, class: 'Struggling' },
-      { month: 'Mar 2026', revenue: 5500000, expenses: 5400000, transactions: 55, sentiment: 0.02, class: 'Struggling' },
-      { month: 'Apr 2026', revenue: 5800000, expenses: 5600000, transactions: 58, sentiment: 0.10, class: 'Struggling' },
+      { month: 'Des 2025', revenue: 5200000, expenses: 5500000, transactions: 52, sentiment: -0.10, class: 'Struggling' },
+      { month: 'Jan 2026', revenue: 6800000, expenses: 6200000, transactions: 68, sentiment: 0.05, class: 'Growth' },
+      { month: 'Feb 2026', revenue: 4500000, expenses: 5000000, transactions: 45, sentiment: -0.15, class: 'Struggling' },
+      { month: 'Mar 2026', revenue: 5000000, expenses: 5200000, transactions: 50, sentiment: -0.08, class: 'Struggling' },
+      { month: 'Apr 2026', revenue: 5500000, expenses: 5400000, transactions: 55, sentiment: 0.02, class: 'Struggling' },
+      { month: 'May 2026', revenue: 5800000, expenses: 5600000, transactions: 58, sentiment: 0.10, class: 'Struggling' },
     ],
     recentReview: 'Kualitas cetak lumayan tapi kadang stok bahan habis. Respon chat agak lambat.',
+    reviews: [
+      'Kualitas cetak lumayan tapi kadang stok bahan habis. Respon chat agak lambat.',
+      'Cetak brosur di sini hasilnya tajam, tapi pengerjaannya molor satu hari dari janji awal.',
+      'Harganya murah bersaing, tapi tolong CS online-nya dipercepat balas pesannya.',
+      'Hasil print bagus warna sesuai, cuma kadang harus antre lama karena mesinnya sedang maintenance.',
+      'Kadang kertas jenis tertentu tidak ready, jadi harus ganti opsi lain.'
+    ]
   },
   umkm_005: {
     name: 'Luthfia Beauty Care',
@@ -150,14 +178,21 @@ const UHP_UMKM_PROFILES = {
     tenure: 36,
     currentClass: 'Elite',
     history: [
-      { month: 'Nov 2025', revenue: 15000000, expenses: 9500000, transactions: 120, sentiment: 0.65, class: 'Elite' },
-      { month: 'Des 2025', revenue: 18000000, expenses: 11000000, transactions: 144, sentiment: 0.70, class: 'Elite' },
-      { month: 'Jan 2026', revenue: 14200000, expenses: 9200000, transactions: 114, sentiment: 0.62, class: 'Elite' },
-      { month: 'Feb 2026', revenue: 16500000, expenses: 10200000, transactions: 132, sentiment: 0.72, class: 'Elite' },
-      { month: 'Mar 2026', revenue: 17800000, expenses: 10800000, transactions: 142, sentiment: 0.75, class: 'Elite' },
-      { month: 'Apr 2026', revenue: 19000000, expenses: 11500000, transactions: 152, sentiment: 0.78, class: 'Elite' },
+      { month: 'Des 2025', revenue: 15000000, expenses: 9500000, transactions: 120, sentiment: 0.65, class: 'Elite' },
+      { month: 'Jan 2026', revenue: 18000000, expenses: 11000000, transactions: 144, sentiment: 0.70, class: 'Elite' },
+      { month: 'Feb2026', revenue: 14200000, expenses: 9200000, transactions: 114, sentiment: 0.62, class: 'Elite' },
+      { month: 'Mar 2026', revenue: 16500000, expenses: 10200000, transactions: 132, sentiment: 0.72, class: 'Elite' },
+      { month: 'Apr 2026', revenue: 17800000, expenses: 10800000, transactions: 142, sentiment: 0.75, class: 'Elite' },
+      { month: 'May 2026', revenue: 19000000, expenses: 11500000, transactions: 152, sentiment: 0.78, class: 'Elite' },
     ],
     recentReview: 'Produk kecantikan berkualitas dan pelayanan sangat ramah. Konsultasi gratis sangat membantu!',
+    reviews: [
+      'Produk kecantikan berkualitas dan pelayanan sangat ramah. Konsultasi gratis sangat membantu!',
+      'Treatment-nya sangat profesional, kliniknya bersih, wangi, dan menenangkan.',
+      'Selalu langganan ke sini karena hasilnya langsung kelihatan bagus di kulit muka.',
+      'Dokter dan terapis sangat ramah, menjelaskan kondisi kulit dengan detail sebelum treatment.',
+      'Pelayanan bintang 5, reservasi mudah lewat WhatsApp dan tidak perlu mengantre lama.'
+    ]
   },
   umkm_006: {
     name: 'Adnien Craft Studio',
@@ -166,14 +201,20 @@ const UHP_UMKM_PROFILES = {
     tenure: 8,
     currentClass: 'Critical',
     history: [
-      { month: 'Nov 2025', revenue: 2200000, expenses: 3000000, transactions: 22, sentiment: -0.30, class: 'Critical' },
-      { month: 'Des 2025', revenue: 3500000, expenses: 3200000, transactions: 35, sentiment: -0.15, class: 'Struggling' },
-      { month: 'Jan 2026', revenue: 1800000, expenses: 2800000, transactions: 18, sentiment: -0.40, class: 'Critical' },
-      { month: 'Feb 2026', revenue: 2000000, expenses: 2900000, transactions: 20, sentiment: -0.35, class: 'Critical' },
-      { month: 'Mar 2026', revenue: 2500000, expenses: 3100000, transactions: 25, sentiment: -0.25, class: 'Critical' },
-      { month: 'Apr 2026', revenue: 2800000, expenses: 3200000, transactions: 28, sentiment: -0.20, class: 'Critical' },
+      { month: 'Des 2025', revenue: 2200000, expenses: 3000000, transactions: 22, sentiment: -0.30, class: 'Critical' },
+      { month: 'Jan 2026', revenue: 3500000, expenses: 3200000, transactions: 35, sentiment: -0.15, class: 'Struggling' },
+      { month: 'Feb 2026', revenue: 1800000, expenses: 2800000, transactions: 18, sentiment: -0.40, class: 'Critical' },
+      { month: 'Mar 2026', revenue: 2000000, expenses: 2900000, transactions: 20, sentiment: -0.35, class: 'Critical' },
+      { month: 'Apr 2026', revenue: 2500000, expenses: 3100000, transactions: 25, sentiment: -0.25, class: 'Critical' },
+      { month: 'May 2026', revenue: 2800000, expenses: 3200000, transactions: 28, sentiment: -0.20, class: 'Critical' },
     ],
     recentReview: 'Produk unik tapi pengiriman lambat. Harga agak mahal dibanding kualitas. Butuh perbaikan layanan.',
+    reviews: [
+      'Produk unik tapi pengiriman lambat. Harga agak mahal dibanding kualitas. Butuh perbaikan layanan.',
+      'Kemasan paket kurang aman jadi ada kerajinan yang sedikit penyok di bagian sudut kayu.',
+      'Pesanan saya baru dikirim setelah 5 hari tanpa ada konfirmasi dari pihak penjual. Kecewa.',
+      'Desainnya bagus-bagus sebenarnya, tapi komunikasi admin lambat sekali dibalas.',
+    ]
   },
 };
 
