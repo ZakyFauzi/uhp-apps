@@ -1679,6 +1679,12 @@ document.addEventListener('DOMContentLoaded', () => {
           // Subscribe to live transactions
           subscribeToTransactions(updatedSession.umkmId);
 
+          // Render business tab if active
+          const activeTab = document.querySelector('.tab-panel.active');
+          if (activeTab && activeTab.id === 'tabMyBiz') {
+            renderMyBusiness();
+          }
+
           // Prefill sidebar form with latest history month values
           const history = updatedSession.history || [];
           if (history.length > 0) {

@@ -147,8 +147,7 @@ INSERT INTO auth.users (
   aud,
   role,
   raw_app_meta_data,
-  raw_user_meta_data,
-  is_super_admin
+  raw_user_meta_data
 )
 VALUES
   (
@@ -162,8 +161,7 @@ VALUES
     'authenticated',
     'authenticated',
     '{"provider":"email","providers":["email"]}',
-    '{"name":"Andi"}',
-    false
+    '{"name":"Andi"}'
   ),
   (
     '9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d',
@@ -176,8 +174,7 @@ VALUES
     'authenticated',
     'authenticated',
     '{"provider":"email","providers":["email"]}',
-    '{"name":"Zaky Muhammad Fauzi"}',
-    false
+    '{"name":"Zaky Muhammad Fauzi"}'
   ),
   (
     '0a9b8c7d-6e5f-4a3b-2c1d-0e9f8a7b6c5d',
@@ -190,8 +187,7 @@ VALUES
     'authenticated',
     'authenticated',
     '{"provider":"email","providers":["email"]}',
-    '{"name":"Brama Hartoyo"}',
-    false
+    '{"name":"Brama Hartoyo"}'
   ),
   (
     '1a0b9c8d-7e6f-5a4b-3c2d-1e0f9a8b7c6d',
@@ -204,8 +200,7 @@ VALUES
     'authenticated',
     'authenticated',
     '{"provider":"email","providers":["email"]}',
-    '{"name":"Ghifary Wibisono"}',
-    false
+    '{"name":"Ghifary Wibisono"}'
   ),
   (
     '2a1b0c9d-8e7f-6a5b-4c3d-2e1f0a9b8c7d',
@@ -218,8 +213,7 @@ VALUES
     'authenticated',
     'authenticated',
     '{"provider":"email","providers":["email"]}',
-    '{"name":"Luthfia Maulidya Izzati"}',
-    false
+    '{"name":"Luthfia Maulidya Izzati"}'
   ),
   (
     '3a2b1c0d-9e8f-7a6b-5c4d-3e2f1a0b9c8d',
@@ -232,8 +226,7 @@ VALUES
     'authenticated',
     'authenticated',
     '{"provider":"email","providers":["email"]}',
-    '{"name":"Prayata Yasinkha Adnien"}',
-    false
+    '{"name":"Prayata Yasinkha Adnien"}'
   );
 
 -- 2. Seed UMKM Profiles
