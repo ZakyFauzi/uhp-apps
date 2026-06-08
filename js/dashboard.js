@@ -890,7 +890,8 @@ async function syncUMKMData() {
       .single();
 
     if (umkmErr || !umkm) {
-      console.warn('UMKM profile not found in Supabase:', umkmErr);
+      console.warn('UMKM profile not found in Supabase. Redirecting to login to clear stale session...', umkmErr);
+      uhpLogout();
       return null;
     }
 
