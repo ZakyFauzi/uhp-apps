@@ -22,41 +22,43 @@ Aturan:
 - Jawab secara ringkas (max 3-4 paragraf) kecuali diminta lebih detail`;
 
 let chatMessages = [];
+let chatMessageCount = 0;
+const DEMO_CHAT_LIMIT = 3;
 
 // ─── Initialize Chat ─────────────────────────────────────────
-function initChat() {
+function initChat(isDemoMode = false) {
   chatMessages = [{
     role: 'system',
     content: UHEPI_SYSTEM_PROMPT,
   }];
+  chatMessageCount = 0;
 
   // Inject user's UMKM data if logged in
-  const session = getSession();
-  const umkm = getMyUMKM();
-  if (session && umkm) {
-    const latest = umkm.history && umkm.history.length > 0 
-      ? umkm.history[umkm.history.length - 1]
-      : { revenue: 5000000, expenses: 4000000, sentiment: 0.0 };
-      
-    chatMessages[0].content += `\n\nData bisnis pengguna saat ini:
+  if (!isDemoMode) {
+    const session = getSession();
+    const umkm = getMyUMKM();
+    if (session && umkm) {
+      const latest = umkm.history[umkm.history.length - 1];
+      chatMessages[0].content += `\n\nData bisnis pengguna saat ini:
 - Nama: ${session.name}
 - Bisnis: ${umkm.name} (${umkm.sector})
 - Lokasi: ${umkm.location}
 - Durasi Usaha: ${umkm.tenure} bulan
-- Status Kesehatan: ${umkm.currentClass || 'Growth'}
+- Status Kesehatan: ${umkm.currentClass}
 - Revenue Terakhir: Rp ${(latest.revenue / 1_000_000).toFixed(1)} Jt
 - Expenses Terakhir: Rp ${(latest.expenses / 1_000_000).toFixed(1)} Jt
-- Burn Rate: ${(latest.expenses / latest.revenue || 0.8).toFixed(3)}
-- NPM: ${(((latest.revenue - latest.expenses) / latest.revenue || 0.2) * 100).toFixed(1)}%
+- Burn Rate: ${(latest.expenses / latest.revenue).toFixed(3)}
+- NPM: ${(((latest.revenue - latest.expenses) / latest.revenue) * 100).toFixed(1)}%
 - Sentiment Score: ${latest.sentiment}
-- Review Terakhir: "${umkm.recentReview || 'Belum ada review'}"
+- Review Terakhir: "${umkm.recentReview}"
 
 Gunakan data ini untuk memberikan saran yang personal dan relevan.`;
+    }
   }
 }
 
 // ─── Render Chat UI ──────────────────────────────────────────
-function renderChatContainer(containerId) {
+function renderChatContainer(containerId, isDemoMode = false) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
@@ -74,6 +76,7 @@ function renderChatContainer(containerId) {
           <span class="chat-header-name">UHePi</span>
           <span class="chat-header-sub">UMKM Health Predictor Intelligence</span>
         </div>
+        ${isDemoMode ? '<span class="chat-demo-badge">Demo</span>' : ''}
       </div>
 
       <div class="chat-messages" id="chatMessages">
@@ -107,7 +110,7 @@ function renderChatContainer(containerId) {
     </div>
   `;
 
-  initChat();
+  initChat(isDemoMode);
 }
 
 // ─── Send Message ────────────────────────────────────────────
@@ -116,7 +119,16 @@ async function sendChat() {
   const msg = (input.value || '').trim();
   if (!msg) return;
 
+  const isDemoMode = !isLoggedIn();
+
+  // Check demo limit
+  if (isDemoMode && chatMessageCount >= DEMO_CHAT_LIMIT) {
+    showDemoLimitCard();
+    return;
+  }
+
   input.value = '';
+  chatMessageCount++;
 
   // Add user message card
   const session = getSession();
@@ -140,9 +152,21 @@ async function sendChat() {
 
     removeTypingIndicator(typingId);
     addMessageCard(reply, 'UHePi', null, 'uhepi');
+
+    // Check if demo limit reached after this message
+    if (isDemoMode && chatMessageCount >= DEMO_CHAT_LIMIT) {
+      setTimeout(showDemoLimitCard, 500);
+    }
   } catch (err) {
     removeTypingIndicator(typingId);
-    addMessageCard('Maaf, saya sedang mengalami kendala teknis. Silakan coba lagi nanti. 🙏', 'UHePi', null, 'uhepi');
+    let errMsg = 'Maaf, saya sedang mengalami kendala teknis. Silakan coba lagi nanti. 🙏';
+    const errStr = String(err.message || err);
+    if (errStr.toLowerCase().includes('expired') || errStr.toLowerCase().includes('api key') || errStr.toLowerCase().includes('key expired') || errStr.toLowerCase().includes('400')) {
+      errMsg = `❌ **Kendala API Gemini**: API Key Anda kedaluwarsa atau tidak valid. Silakan buat API Key baru yang gratis di [Google AI Studio](https://aistudio.google.com/) dan pasang sebagai environment variable \`GEMINI_API_KEY\` di Netlify atau di file \`.env\` Anda.`;
+    } else {
+      errMsg = `❌ **Kendala API**: Gagal mendapatkan respons dari model. Silakan pastikan API Key Gemini yang Anda pasang aktif dan valid.`;
+    }
+    addMessageCard(errMsg, 'UHePi', null, 'uhepi');
     console.error('[UHePi] API error:', err);
   }
 }
@@ -180,7 +204,7 @@ async function callUHePiAPI(messages) {
   // Fallback: direct Gemini API call (for local development / when Netlify functions unavailable)
   try {
     const GEMINI_KEY = 'AIzaSyDc9k6NfmX1H2rGt2oEoJ1ojmNTT251LSg';
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-2.0-flash-lite';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`;
 
     // Convert OpenAI-style messages to Gemini format
@@ -256,6 +280,7 @@ function addMessageCard(text, name, avatar, type) {
   container.scrollTop = container.scrollHeight;
 }
 
+// ─── Typing Indicator ─────────────────────────────────────────
 function addTypingIndicator() {
   const container = document.getElementById('chatMessages');
   const id = 'typing-' + Date.now();
@@ -282,4 +307,27 @@ function addTypingIndicator() {
 function removeTypingIndicator(id) {
   const el = document.getElementById(id);
   if (el) el.remove();
+}
+
+// ─── Demo Limit Indicator ─────────────────────────────────────
+function showDemoLimitCard() {
+  const container = document.getElementById('chatMessages');
+  const card = document.createElement('div');
+  card.className = 'chat-limit-card animate-in';
+  card.innerHTML = `
+    <div class="limit-icon">🔒</div>
+    <div class="limit-title">Batas Demo Tercapai</div>
+    <div class="limit-text">Anda telah menggunakan ${DEMO_CHAT_LIMIT} pesan gratis. Login untuk chat tanpa batas dengan UHePi!</div>
+    <a href="login.html" class="btn-primary" style="margin-top:12px;text-decoration:none;">
+      <span>Login untuk Akses Penuh</span>
+    </a>
+  `;
+  container.appendChild(card);
+  container.scrollTop = container.scrollHeight;
+
+  // Disable input
+  const input = document.getElementById('chatInput');
+  const btn = document.getElementById('chatSendBtn');
+  if (input) { input.disabled = true; input.placeholder = 'Login untuk melanjutkan...'; }
+  if (btn) btn.disabled = true;
 }

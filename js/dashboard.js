@@ -1189,6 +1189,190 @@ async function updateUMKMHistoryForMonth(umkmId, dateStr) {
   }
 }
 
+let trendChartInstance = null;
+let sentimentChartInstance = null;
+
+function initMyBizCharts(history, transactions) {
+  const trendCtx = document.getElementById('myBizTrendChart');
+  const sentimentCtx = document.getElementById('myBizSentimentChart');
+
+  if (!trendCtx || !sentimentCtx) return;
+
+  // Destroy existing chart instances to avoid canvas reuse errors
+  if (trendChartInstance) {
+    trendChartInstance.destroy();
+    trendChartInstance = null;
+  }
+  if (sentimentChartInstance) {
+    sentimentChartInstance.destroy();
+    sentimentChartInstance = null;
+  }
+
+  // Retrieve system/theme colors dynamically
+  const rootStyle = getComputedStyle(document.documentElement);
+  const textColor = rootStyle.getPropertyValue('--text-secondary').trim() || '#94a3b8';
+  const gridColor = rootStyle.getPropertyValue('--border-subtle').trim() || 'rgba(255, 255, 255, 0.05)';
+  const fontFamily = rootStyle.getPropertyValue('--font').trim() || 'sans-serif';
+
+  // 1. Line Chart: Monthly Financial Trend (Revenue, Expenses, Net Profit)
+  const months = history.map(h => h.month);
+  const revenueData = history.map(h => h.revenue);
+  const expensesData = history.map(h => h.expenses);
+  const profitData = history.map(h => h.revenue - h.expenses);
+
+  trendChartInstance = new Chart(trendCtx, {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [
+        {
+          label: 'Revenue (Pemasukan)',
+          data: revenueData,
+          borderColor: '#60a5fa', // Blue
+          backgroundColor: 'rgba(96, 165, 250, 0.08)',
+          borderWidth: 3,
+          tension: 0.35,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          fill: false
+        },
+        {
+          label: 'Expenses (Pengeluaran)',
+          data: expensesData,
+          borderColor: '#f472b6', // Rose
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.35,
+          borderDash: [4, 4],
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          fill: false
+        },
+        {
+          label: 'Laba Bersih (Net Profit)',
+          data: profitData,
+          borderColor: '#34d399', // Emerald
+          backgroundColor: 'rgba(52, 211, 153, 0.12)',
+          borderWidth: 2.5,
+          tension: 0.35,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            color: textColor,
+            boxWidth: 12,
+            font: { family: fontFamily, size: 11, weight: '600' }
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleFont: { family: fontFamily, size: 12, weight: '700' },
+          bodyFont: { family: fontFamily, size: 12 },
+          padding: 10,
+          callbacks: {
+            label: function(context) {
+              let val = context.parsed.y;
+              return ` ${context.dataset.label}: ${formatIDR(val)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: gridColor },
+          ticks: { color: textColor, font: { family: fontFamily, size: 10 } }
+        },
+        y: {
+          grid: { color: gridColor },
+          ticks: {
+            color: textColor,
+            font: { family: fontFamily, size: 10 },
+            callback: function(value) {
+              if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+              if (value <= -1000000) return (value / 1000000).toFixed(1) + 'M';
+              return formatIDR(value);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // 2. Doughnut Chart: Customer Review Sentiment Distribution
+  let positiveCount = 0;
+  let neutralCount = 0;
+  let negativeCount = 0;
+
+  if (transactions.length > 0) {
+    transactions.forEach(t => {
+      const score = t.sentiment_score !== null ? parseFloat(t.sentiment_score) : 0;
+      if (score >= 0.2) positiveCount++;
+      else if (score <= -0.15) negativeCount++;
+      else neutralCount++;
+    });
+  } else if (history.length > 0) {
+    history.forEach(h => {
+      const score = h.sentiment !== null ? parseFloat(h.sentiment) : 0;
+      if (score >= 0.2) positiveCount++;
+      else if (score <= -0.15) negativeCount++;
+      else neutralCount++;
+    });
+  }
+
+  // Fallback indicator if no data points are present
+  if (positiveCount === 0 && neutralCount === 0 && negativeCount === 0) {
+    positiveCount = 1;
+  }
+
+  sentimentChartInstance = new Chart(sentimentCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Positif', 'Netral', 'Negatif'],
+      datasets: [
+        {
+          data: [positiveCount, neutralCount, negativeCount],
+          backgroundColor: [
+            'rgba(52, 211, 153, 0.85)', // var(--elite)
+            'rgba(251, 146, 60, 0.85)',  // var(--growth)
+            'rgba(248, 113, 113, 0.85)'  // var(--critical)
+          ],
+          borderColor: rootStyle.getPropertyValue('--bg-panel').trim() || '#1e293b',
+          borderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '70%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          padding: 8,
+          callbacks: {
+            label: function(context) {
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const val = context.parsed;
+              const pct = ((val / total) * 100).toFixed(1);
+              return ` ${context.label}: ${val} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
 function renderMyBusiness() {
   const container = document.getElementById('myBizContainer');
   if (!container) return;
@@ -1214,24 +1398,6 @@ function renderMyBusiness() {
   const npm = latest.revenue > 0 ? ((netProfit / latest.revenue) * 100).toFixed(1) : '0.0';
   const burnRate = latest.revenue > 0 ? (latest.expenses / latest.revenue).toFixed(3) : '0.000';
   const classColor = CLASS_COLORS[umkm.currentClass] || 'var(--accent-brand)';
-
-  // Revenue chart bars (normalized)
-  let historyBars = '';
-  if (history.length > 0) {
-    const maxRev = Math.max(...history.map(h => h.revenue));
-    historyBars = history.map(h => {
-      const height = maxRev > 0 ? (h.revenue / maxRev * 120) + 8 : 8;
-      const barColor = CLASS_COLORS[h.class] || 'var(--accent-brand)';
-      return `
-        <div class="history-bar-group">
-          <div class="history-bar-value">${formatIDR(h.revenue)}</div>
-          <div class="history-bar" style="height:${height}px;background:${barColor};"></div>
-          <div class="history-bar-label">${h.month.split(' ')[0]}</div>
-        </div>`;
-    }).join('');
-  } else {
-    historyBars = '<div style="color:var(--text-muted);padding:20px;">Belum ada data riwayat bulanan.</div>';
-  }
 
   // Representative reviews from transactions
   let reviewsToShow = [];
@@ -1276,8 +1442,10 @@ function renderMyBusiness() {
     </div>
 
     <div class="mybiz-history">
-      <h3>📈 Tren Revenue Bulanan (menampilkan ${history.length} bulan terakhir)</h3>
-      <div class="history-chart">${historyBars}</div>
+      <h3>📈 Tren Keuangan Bulanan</h3>
+      <div style="position: relative; height: 260px; width: 100%; margin-top: 15px;">
+        <canvas id="myBizTrendChart"></canvas>
+      </div>
     </div>
 
     <div class="mybiz-review">
@@ -1287,23 +1455,36 @@ function renderMyBusiness() {
           <h4>Ulasan Pelanggan Terpilih</h4>
           <div class="reviews-list-container">
             ${reviewsToShow.length > 0 ? reviewsToShow.map(rv => {
-              const score = rv.sentiment_score !== null ? parseFloat(rv.sentiment_score) : 0;
-              const badgeColor = score >= 0.2 ? 'var(--elite)' : score <= -0.15 ? 'var(--critical)' : 'var(--growth)';
-              const emoji = score >= 0.2 ? '🙂' : score <= -0.15 ? '😟' : '😐';
-              const label = score >= 0.2 ? 'Positif' : score <= -0.15 ? 'Negatif' : 'Netral';
-              return `
-              <div class="mybiz-review-card">
-                <div class="mybiz-review-badge" style="background:${badgeColor}15; color:${badgeColor};">
-                  <span>${emoji}</span>
-                  <span class="mybiz-review-sentiment-label">${label} (${(score >= 0 ? '+' : '') + score.toFixed(2)})</span>
-                </div>
-                <div class="mybiz-review-card-text">"${rv.review_text}"</div>
-                <div class="mybiz-review-card-meta">${rv.customer_name || 'Pelanggan'} — ${rv.date}</div>
-              </div>`;
-            }).join('') : `<div class="no-reviews" style="color:var(--text-muted);padding:20px;text-align:center;">Belum ada ulasan untuk bisnis ini.</div>`}
+               const score = rv.sentiment_score !== null ? parseFloat(rv.sentiment_score) : 0;
+               const badgeColor = score >= 0.2 ? 'var(--elite)' : score <= -0.15 ? 'var(--critical)' : 'var(--growth)';
+               const emoji = score >= 0.2 ? '🙂' : score <= -0.15 ? '😟' : '😐';
+               const label = score >= 0.2 ? 'Positif' : score <= -0.15 ? 'Negatif' : 'Netral';
+               return `
+               <div class="mybiz-review-card">
+                 <div class="mybiz-review-badge" style="background:${badgeColor}15; color:${badgeColor};">
+                   <span>${emoji}</span>
+                   <span class="mybiz-review-sentiment-label">${label} (${(score >= 0 ? '+' : '') + score.toFixed(2)})</span>
+                 </div>
+                 <div class="mybiz-review-card-text">"${rv.review_text}"</div>
+                 <div class="mybiz-review-card-meta">${rv.customer_name || 'Pelanggan'} — ${rv.date}</div>
+               </div>`;
+             }).join('') : `<div class="no-reviews" style="color:var(--text-muted);padding:20px;text-align:center;">Belum ada ulasan untuk bisnis ini.</div>`}
           </div>
         </div>
-        <div class="mybiz-review-side">
+        
+        <div class="mybiz-review-side" style="display: flex; flex-direction: column; gap: 20px;">
+          <div class="mybiz-review-summary" style="padding: 16px;">
+            <h4>📊 Distribusi Sentimen</h4>
+            <div style="position: relative; height: 160px; width: 100%; margin: 10px 0;">
+              <canvas id="myBizSentimentChart"></canvas>
+            </div>
+            <div style="display: flex; justify-content: space-around; font-size: 11px; color: var(--text-secondary); font-weight: 700; margin-top: 5px;">
+              <span style="color:var(--elite)">🟢 Positif</span>
+              <span style="color:var(--growth)">🟡 Netral</span>
+              <span style="color:var(--critical)">🔴 Negatif</span>
+            </div>
+          </div>
+
           <div class="mybiz-review-summary">
             <h4>Ringkasan Bulan ke Bulan</h4>
             <div class="summary-timeline">
@@ -1397,31 +1578,35 @@ function renderMyBusiness() {
           </thead>
           <tbody>
             ${transactions.length > 0 ? transactions.map(t => {
-              const score = t.sentiment_score !== null ? parseFloat(t.sentiment_score) : 0;
-              const badgeColor = score >= 0.2 ? 'var(--elite)' : score <= -0.15 ? 'var(--critical)' : 'var(--growth)';
-              const label = score >= 0.2 ? 'Positif' : score <= -0.15 ? 'Negatif' : 'Netral';
-              return `
-              <tr>
-                <td style="font-weight: 700; color: var(--text-secondary);">${t.order_number}</td>
-                <td>${t.date}</td>
-                <td style="font-weight: 600;">${t.customer_name || '—'}</td>
-                <td>${t.item_name}</td>
-                <td>${t.quantity}</td>
-                <td>${formatIDR(t.price)}</td>
-                <td style="font-weight: 700;">${formatIDR(t.amount)}</td>
-                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${t.review_text || ''}">${t.review_text || '—'}</td>
-                <td>
-                  <span class="class-badge" style="background:${badgeColor}15; color:${badgeColor}; border:none; padding: 2px 6px; font-size:11px;">
-                    ${label} (${(score >= 0 ? '+' : '') + score.toFixed(2)})
-                  </span>
-                </td>
-              </tr>`;
-            }).join('') : `<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-muted);">Belum ada data transaksi.</td></tr>`}
+               const score = t.sentiment_score !== null ? parseFloat(t.sentiment_score) : 0;
+               const badgeColor = score >= 0.2 ? 'var(--elite)' : score <= -0.15 ? 'var(--critical)' : 'var(--growth)';
+               const label = score >= 0.2 ? 'Positif' : score <= -0.15 ? 'Negatif' : 'Netral';
+               return `
+               <tr>
+                 <td style="font-weight: 700; color: var(--text-secondary);">${t.order_number}</td>
+                 <td>${t.date}</td>
+                 <td style="font-weight: 600;">${t.customer_name || '—'}</td>
+                 <td>${t.item_name}</td>
+                 <td>${t.quantity}</td>
+                 <td>${formatIDR(t.price)}</td>
+                 <td style="font-weight: 700;">${formatIDR(t.amount)}</td>
+                 <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${t.review_text || ''}">${t.review_text || '—'}</td>
+                 <td>
+                   <span class="class-badge" style="background:${badgeColor}15; color:${badgeColor}; border:none; padding: 2px 6px; font-size:11px;">
+                     ${label} (${(score >= 0 ? '+' : '') + score.toFixed(2)})
+                   </span>
+                 </td>
+               </tr>`;
+             }).join('') : `<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-muted);">Belum ada data transaksi.</td></tr>`}
           </tbody>
         </table>
       </div>
     </div>
   `;
+
+  setTimeout(() => {
+    initMyBizCharts(history, transactions);
+  }, 50);
 }
 
 // ─── Init on Page Load ───────────────────────────────────────
