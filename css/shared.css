@@ -191,3 +191,68 @@ button { cursor: pointer; font-family: var(--font); }
 @media (max-width: 480px) {
   html { font-size: 12px; }
 }
+
+/* --- Dark Theme Variables --- */
+:root.dark-theme {
+  --bg-base: #0b0f19;
+  --bg-panel: #151f32;
+  --bg-surface: #1e293b;
+  --bg-elevated: #2e3f5a;
+  --bg-hover: #3d5275;
+
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-strong: rgba(255, 255, 255, 0.1);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #889bb5;
+  --text-inverse: #0b0f19;
+
+  --accent-brand: #3b82f6;
+  --accent-brand-dim: rgba(59, 130, 246, 0.15);
+  --accent-brand-glow: rgba(59, 130, 246, 0.3);
+
+  --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.4), 0 4px 12px -4px rgba(0, 0, 0, 0.25);
+  
+  --elite: #34d399;
+  --elite-dim: rgba(52, 211, 153, 0.15);
+  --growth: #38bdf8;
+  --growth-dim: rgba(56, 189, 248, 0.12);
+  --struggling: #fbbf24;
+  --struggling-dim: rgba(251, 191, 36, 0.15);
+  --critical: #f87171;
+  --critical-dim: rgba(248, 113, 113, 0.15);
+}
+
+:root.dark-theme .glass-card {
+  background: rgba(21, 31, 50, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* --- Accessibility Font Size Scaling --- */
+:root.font-large body {
+  font-size: 15px;
+}
+:root.font-large .brand-name { font-size: 18px !important; }
+:root.font-large .brand-sub { font-size: 12px !important; }
+:root.font-large .nav-btn { font-size: 14.5px !important; }
+:root.font-large .sidebar-title { font-size: 17px !important; }
+:root.font-large .sidebar-desc { font-size: 13.5px !important; }
+:root.font-large .form-label { font-size: 14px !important; }
+:root.font-large .form-input, :root.font-large .form-textarea { font-size: 15px !important; }
+:root.font-large .btn-primary, :root.font-large .btn-secondary, :root.font-large .analyze-btn { font-size: 15px !important; }
+:root.font-large .metric-num, :root.font-large .metric-value { font-size: 26px !important; }
+:root.font-large .metric-label { font-size: 13px !important; }
+:root.font-large .chat-card-text { font-size: 14.5px !important; }
+:root.font-large table th { font-size: 13.5px !important; }
+:root.font-large table td { font-size: 13.5px !important; }
+:root.font-large p, :root.font-large span, :root.font-large li, :root.font-large div {
+  /* Scale general text elements slightly */
+  line-height: 1.6;
+}
+
+/* Smooth Transition for Theme Switches */
+body, .glass-card, .sidebar, .app-header, .metric-card, .chart-card, .insights-card, .mybiz-profile, .mybiz-history, .mybiz-review, input, button, select, textarea {
+  transition: background 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+

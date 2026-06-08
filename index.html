@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/shared.css" />
   <link rel="stylesheet" href="css/landing.css" />
+  <script src="js/accessibility.js"></script>
 </head>
 <body>
   <!-- Navigation -->
@@ -28,7 +29,17 @@
     <div class="nav-links">
       <a href="#features">Fitur</a>
       <a href="#how-it-works">Cara Kerja</a>
-      <a href="register.html" style="color: var(--text-secondary); transition: var(--transition);">Daftar</a>
+      
+      <!-- Theme & Accessibility Toggles -->
+      <button class="nav-btn theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle Theme" style="padding: 6px 12px; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      
+      <select class="font-size-select" onchange="setFontSize(this.value)" aria-label="Ukuran Teks" style="padding: 6px 8px; background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: var(--radius-md); color: var(--text-primary); font-family: var(--font); font-size: 12px; cursor: pointer; outline: none;">
+        <option value="normal">Teks: Normal</option>
+        <option value="large">Teks: Besar</option>
+      </select>
+      
       <a href="login.html" class="nav-login">Login</a>
     </div>
   </nav>
@@ -49,11 +60,8 @@
         Platform cerdas yang menganalisis finansial, sentimen pelanggan, dan data operasional untuk memberikan diagnosa kesehatan bisnis UMKM secara real-time.
       </p>
       <div class="hero-cta">
-        <a href="demo.html" class="btn-primary">
-          <span>🚀 Coba Demo Gratis</span>
-        </a>
-        <a href="login.html" class="btn-secondary">
-          Login Dashboard
+        <a href="login.html" class="btn-primary">
+          <span>🚀 Masuk ke Dashboard</span>
         </a>
       </div>
     </div>
@@ -140,10 +148,9 @@
   <section class="cta-section">
     <div class="cta-card">
       <h2 class="cta-title">Siap Cek Kesehatan Bisnis?</h2>
-      <p class="cta-desc">Mulai gratis tanpa perlu registrasi. Coba demo atau login untuk akses penuh ke semua fitur.</p>
+      <p class="cta-desc">Kelola dan pantau kesehatan bisnis UMKM Anda secara real-time dengan bantuan kecerdasan buatan.</p>
       <div class="cta-buttons">
-        <a href="demo.html" class="btn-primary"><span>Coba Demo</span></a>
-        <a href="login.html" class="btn-secondary">Login</a>
+        <a href="login.html" class="btn-primary"><span>Masuk ke Dashboard</span></a>
       </div>
     </div>
   </section>
@@ -152,9 +159,9 @@
   <footer class="landing-footer">
     <span>© 2026 UHP — UMKM Health Predictor</span>
     <div class="footer-links">
-      <a href="demo.html">Demo</a>
       <a href="login.html">Login</a>
       <a href="#features">Fitur</a>
+      <a href="#how-it-works">Cara Kerja</a>
     </div>
   </footer>
 

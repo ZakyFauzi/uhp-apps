@@ -875,6 +875,320 @@ function changePage(dir) {
 }
 
 // ─── "Bisnis Saya" Tab ──────────────────────────────────────
+
+// Sync session data with Supabase dynamically
+async function syncUMKMData() {
+  const session = getSession();
+  if (!session || !window.supabase || !supabase) return null;
+
+  try {
+    // 1. Fetch UMKM profile
+    const { data: umkm, error: umkmErr } = await supabase
+      .from('umkm_profiles')
+      .select('*')
+      .eq('user_id', session.userId)
+      .single();
+
+    if (umkmErr || !umkm) {
+      console.warn('UMKM profile not found in Supabase:', umkmErr);
+      return null;
+    }
+
+    // 2. Fetch monthly history
+    const { data: history, error: histErr } = await supabase
+      .from('umkm_history')
+      .select('*')
+      .eq('umkm_id', umkm.id)
+      .order('id', { ascending: true });
+
+    // 3. Fetch transactions
+    const { data: transactions, error: txErr } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('umkm_id', umkm.id)
+      .order('created_at', { ascending: false });
+
+    // Update session cache
+    session.umkmId = umkm.id;
+    session.umkmName = umkm.name;
+    session.sector = umkm.sector;
+    session.location = umkm.location;
+    session.tenure = umkm.tenure;
+    session.currentClass = umkm.current_class;
+    session.history = (history || []).map(h => ({
+      month: h.month,
+      revenue: parseFloat(h.revenue),
+      expenses: parseFloat(h.expenses),
+      transactions: parseInt(h.transactions),
+      sentiment: parseFloat(h.sentiment),
+      class: h.class
+    }));
+    session.transactions = transactions || [];
+
+    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+    return session;
+  } catch (err) {
+    console.error('Error syncing UMKM data:', err);
+    return null;
+  }
+}
+
+let realtimeChannel = null;
+function subscribeToTransactions(umkmId) {
+  if (!window.supabase || !supabase || !umkmId || realtimeChannel) return;
+
+  // Realtime subscription to transactions and profile changes for this UMKM
+  realtimeChannel = supabase
+    .channel('realtime_umkm_' + umkmId)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'transactions',
+        filter: 'umkm_id=eq.' + umkmId
+      },
+      async (payload) => {
+        console.log('Realtime transactions change detected:', payload);
+        await syncUMKMData();
+        
+        // If we are currently on the "mybiz" tab, re-render!
+        const activeTab = document.querySelector('.nav-btn.active')?.id;
+        if (activeTab === 'navMyBiz') {
+          renderMyBusiness();
+        }
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'umkm_profiles',
+        filter: 'id=eq.' + umkmId
+      },
+      async (payload) => {
+        console.log('Realtime profile change detected:', payload);
+        await syncUMKMData();
+        
+        const activeTab = document.querySelector('.nav-btn.active')?.id;
+        if (activeTab === 'navMyBiz') {
+          renderMyBusiness();
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log('Realtime subscription status:', status);
+    });
+}
+
+function toggleAddTransactionForm() {
+  const formCard = document.getElementById('addTxFormCard');
+  if (formCard) {
+    const isHidden = formCard.style.display === 'none';
+    formCard.style.display = isHidden ? 'block' : 'none';
+    
+    // Pre-fill Order Number with dynamic random/sequential string
+    if (isHidden) {
+      const txNum = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('txOrderNumber').value = txNum;
+      document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('txCustomerName').value = '';
+      document.getElementById('txItemName').value = '';
+      document.getElementById('txQuantity').value = '1';
+      document.getElementById('txPrice').value = '';
+      document.getElementById('txReviewText').value = '';
+    }
+  }
+}
+
+async function handleAddTransactionSubmit(e) {
+  e.preventDefault();
+  
+  const btn = document.getElementById('btnSubmitTx');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Memproses...';
+  }
+
+  const orderNum = document.getElementById('txOrderNumber').value;
+  const date = document.getElementById('txDate').value;
+  const custName = document.getElementById('txCustomerName').value;
+  const itemName = document.getElementById('txItemName').value;
+  const qty = parseInt(document.getElementById('txQuantity').value) || 1;
+  const price = parseFloat(document.getElementById('txPrice').value) || 0;
+  const review = document.getElementById('txReviewText').value;
+
+  const sentimentScore = computeSentiment(review).score;
+  const amount = qty * price;
+  
+  const session = getSession();
+  if (!session || !session.umkmId) {
+    alert('Sesi login tidak valid.');
+    return;
+  }
+
+  try {
+    // 1. Insert transaction to Supabase
+    const { error } = await supabase
+      .from('transactions')
+      .insert({
+        umkm_id: session.umkmId,
+        order_number: orderNum,
+        date: date,
+        customer_name: custName,
+        item_name: itemName,
+        quantity: qty,
+        price: price,
+        amount: amount,
+        review_text: review,
+        sentiment_score: sentimentScore
+      });
+
+    if (error) throw error;
+
+    // 2. Run background logic to update history for this month
+    await updateUMKMHistoryForMonth(session.umkmId, date);
+
+    // 3. Sync data
+    await syncUMKMData();
+
+    // 4. Reset form & toggle visibility
+    toggleAddTransactionForm();
+    
+    // 5. Re-render
+    renderMyBusiness();
+    
+    // 6. Show Success notification
+    alert('Transaksi berhasil ditambahkan dan kesehatan bisnis diperbarui secara real-time!');
+  } catch (err) {
+    console.error('Error adding transaction:', err);
+    alert('Gagal menambahkan transaksi: ' + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Simpan Transaksi';
+    }
+  }
+}
+
+async function updateUMKMHistoryForMonth(umkmId, dateStr) {
+  if (!supabase) return;
+
+  try {
+    const d = new Date(dateStr);
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const monthLabel = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+
+    // 1. Fetch all transactions for this month
+    const startStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+    const endStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-31`;
+
+    const { data: txs, error: txErr } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('umkm_id', umkmId)
+      .gte('date', startStr)
+      .lte('date', endStr);
+
+    if (txErr) {
+      console.error('Error fetching transactions for history calculation:', txErr);
+      return;
+    }
+
+    let totalRevenue = 0;
+    let count = 0;
+    let totalSentiment = 0;
+    let sentimentCount = 0;
+
+    if (txs && txs.length > 0) {
+      count = txs.length;
+      txs.forEach(t => {
+        totalRevenue += parseFloat(t.amount || 0);
+        if (t.sentiment_score !== null && t.sentiment_score !== undefined) {
+          totalSentiment += parseFloat(t.sentiment_score);
+          sentimentCount += 1;
+        }
+      });
+    }
+
+    const avgSentiment = sentimentCount > 0 ? (totalSentiment / sentimentCount) : 0;
+
+    // 2. Fetch or update umkm_history row for this month
+    const { data: existingHist } = await supabase
+      .from('umkm_history')
+      .select('id, expenses')
+      .eq('umkm_id', umkmId)
+      .eq('month', monthLabel)
+      .maybeSingle();
+
+    const expenses = existingHist ? parseFloat(existingHist.expenses) : (totalRevenue * 0.75);
+
+    // Get current tenure
+    const { data: profile } = await supabase
+      .from('umkm_profiles')
+      .select('*')
+      .eq('id', umkmId)
+      .single();
+
+    const tenure = profile ? profile.tenure : 12;
+    const repeatOrder = 25; // default
+
+    // Predict new class using our local ML engine
+    let newClass = 'Growth';
+    if (window.MLEngine) {
+      const pred = await window.MLEngine.predictUMKMClass(
+        totalRevenue,
+        expenses,
+        count,
+        tenure,
+        avgSentiment,
+        repeatOrder
+      );
+      if (pred && pred.predictedClass) {
+        newClass = pred.predictedClass;
+      }
+    }
+
+    if (existingHist) {
+      // Update history row
+      await supabase
+        .from('umkm_history')
+        .update({
+          revenue: totalRevenue,
+          transactions: count,
+          sentiment: avgSentiment,
+          class: newClass
+        })
+        .eq('id', existingHist.id);
+    } else {
+      // Insert history row
+      await supabase
+        .from('umkm_history')
+        .insert({
+          umkm_id: umkmId,
+          month: monthLabel,
+          revenue: totalRevenue,
+          expenses: expenses,
+          transactions: count,
+          sentiment: avgSentiment,
+          class: newClass
+        });
+    }
+
+    // Update current_class in profile
+    await supabase
+      .from('umkm_profiles')
+      .update({
+        current_class: newClass
+      })
+      .eq('id', umkmId);
+
+  } catch (err) {
+    console.error('Error updating history for month:', err);
+  }
+}
+
 function renderMyBusiness() {
   const container = document.getElementById('myBizContainer');
   if (!container) return;
@@ -885,61 +1199,47 @@ function renderMyBusiness() {
     return;
   }
 
-  const umkm = UHP_UMKM_PROFILES[session.umkmId];
+  // Get UMKM profile from getMyUMKM()
+  const umkm = getMyUMKM();
   if (!umkm) {
     container.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-muted);">Data bisnis tidak ditemukan.</div>';
     return;
   }
 
-  const latest = umkm.history[umkm.history.length - 1];
+  const history = umkm.history || [];
+  const transactions = session.transactions || [];
+
+  const latest = history.length > 0 ? history[history.length - 1] : { revenue: 5000000, expenses: 4000000, class: 'Growth', transactions: 0, sentiment: 0 };
   const netProfit = latest.revenue - latest.expenses;
-  const npm = ((netProfit / latest.revenue) * 100).toFixed(1);
-  const burnRate = (latest.expenses / latest.revenue).toFixed(3);
+  const npm = latest.revenue > 0 ? ((netProfit / latest.revenue) * 100).toFixed(1) : '0.0';
+  const burnRate = latest.revenue > 0 ? (latest.expenses / latest.revenue).toFixed(3) : '0.000';
   const classColor = CLASS_COLORS[umkm.currentClass] || 'var(--accent-brand)';
 
   // Revenue chart bars (normalized)
-  const maxRev = Math.max(...umkm.history.map(h => h.revenue));
-  const historyBars = umkm.history.map(h => {
-    console.log("panjang data", latest);
-    const height = (h.revenue / maxRev * 120) + 8;
-    const barColor = CLASS_COLORS[h.class] || 'var(--accent-brand)';
-    return `
-      <div class="history-bar-group">
-        <div class="history-bar-value">${formatIDR(h.revenue)}</div>
-        <div class="history-bar" style="height:${height}px;background:${barColor};"></div>
-        <div class="history-bar-label">${h.month.split(' ')[0]}</div>
-      </div>`;
-  }).join('');
-
-  // Prepare recent review summary (use last up to 6 months from history)
-  const recentHistory = umkm.history.slice(-6);
-  const recentSummaryItems = recentHistory.map(h => ({
-    month: h.month,
-    sentiment: typeof h.sentiment === 'number' ? h.sentiment : 0,
-    transactions: h.transactions || 0,
-    cls: h.class || umkm.currentClass
-  }));
-
-  // Collect multiple reviews to show (prioritize umkm.reviews, then uploadedReviews, then recentReview)
-  let rawReviews = [];
-  if (Array.isArray(umkm.reviews) && umkm.reviews.length) {
-    rawReviews = umkm.reviews.slice();
-  } else if (uploadedReviews && uploadedReviews.length) {
-    rawReviews = uploadedReviews.slice();
-  } else if (umkm.recentReview) {
-    rawReviews = [umkm.recentReview];
+  let historyBars = '';
+  if (history.length > 0) {
+    const maxRev = Math.max(...history.map(h => h.revenue));
+    historyBars = history.map(h => {
+      const height = maxRev > 0 ? (h.revenue / maxRev * 120) + 8 : 8;
+      const barColor = CLASS_COLORS[h.class] || 'var(--accent-brand)';
+      return `
+        <div class="history-bar-group">
+          <div class="history-bar-value">${formatIDR(h.revenue)}</div>
+          <div class="history-bar" style="height:${height}px;background:${barColor};"></div>
+          <div class="history-bar-label">${h.month.split(' ')[0]}</div>
+        </div>`;
+    }).join('');
+  } else {
+    historyBars = '<div style="color:var(--text-muted);padding:20px;">Belum ada data riwayat bulanan.</div>';
   }
 
-  // Normalize reviews into objects { text, month? }
-  const reviewsNormalized = rawReviews.map(r => {
-    if (!r) return null;
-    if (typeof r === 'string') return { text: r };
-    if (typeof r === 'object') return { text: r.text || r.review || '', month: r.month };
-    return null;
-  }).filter(Boolean);
-
-  // Limit to representative reviews (prefer showing most recent)
-  const reviewsToShow = reviewsNormalized.slice(-4).reverse();
+  // Representative reviews from transactions
+  let reviewsToShow = [];
+  if (transactions.length > 0) {
+    reviewsToShow = transactions
+      .filter(t => t.review_text && t.review_text.trim() !== '')
+      .slice(0, 4);
+  }
 
   container.innerHTML = `
     <div class="mybiz-profile" style="--badge-color:${classColor}">
@@ -976,7 +1276,7 @@ function renderMyBusiness() {
     </div>
 
     <div class="mybiz-history">
-      <h3>📈 Tren Revenue Bulanan (menampilkan ${umkm.history.length} bulan terakhir)</h3>
+      <h3>📈 Tren Revenue Bulanan (menampilkan ${history.length} bulan terakhir)</h3>
       <div class="history-chart">${historyBars}</div>
     </div>
 
@@ -987,7 +1287,7 @@ function renderMyBusiness() {
           <h4>Ulasan Pelanggan Terpilih</h4>
           <div class="reviews-list-container">
             ${reviewsToShow.length > 0 ? reviewsToShow.map(rv => {
-              const score = (typeof computeSentiment === 'function') ? computeSentiment(rv.text).score : 0;
+              const score = rv.sentiment_score !== null ? parseFloat(rv.sentiment_score) : 0;
               const badgeColor = score >= 0.2 ? 'var(--elite)' : score <= -0.15 ? 'var(--critical)' : 'var(--growth)';
               const emoji = score >= 0.2 ? '🙂' : score <= -0.15 ? '😟' : '😐';
               const label = score >= 0.2 ? 'Positif' : score <= -0.15 ? 'Negatif' : 'Netral';
@@ -997,24 +1297,24 @@ function renderMyBusiness() {
                   <span>${emoji}</span>
                   <span class="mybiz-review-sentiment-label">${label} (${(score >= 0 ? '+' : '') + score.toFixed(2)})</span>
                 </div>
-                <div class="mybiz-review-card-text">"${rv.text}"</div>
-                ${rv.month ? `<div class="mybiz-review-card-meta">${rv.month}</div>` : ''}
+                <div class="mybiz-review-card-text">"${rv.review_text}"</div>
+                <div class="mybiz-review-card-meta">${rv.customer_name || 'Pelanggan'} — ${rv.date}</div>
               </div>`;
-            }).join('') : `<div class="no-reviews" style="color:var(--text-muted)">Belum ada ulasan untuk bisnis ini.</div>`}
+            }).join('') : `<div class="no-reviews" style="color:var(--text-muted);padding:20px;text-align:center;">Belum ada ulasan untuk bisnis ini.</div>`}
           </div>
         </div>
         <div class="mybiz-review-side">
           <div class="mybiz-review-summary">
-            <h4>Ringkasan 6 Bulan Terakhir</h4>
+            <h4>Ringkasan Bulan ke Bulan</h4>
             <div class="summary-timeline">
-              ${recentSummaryItems.slice().reverse().map(r => {
-                const badgeClass = `class-badge class-${r.cls.toLowerCase()}`;
+              ${history.slice().reverse().map(r => {
+                const badgeClass = `class-badge class-${r.class.toLowerCase()}`;
                 const sentColor = r.sentiment >= 0.2 ? 'var(--elite)' : r.sentiment <= -0.15 ? 'var(--critical)' : 'var(--growth)';
                 return `
                 <div class="timeline-item">
                   <div class="timeline-month"><strong>${r.month}</strong></div>
                   <div class="timeline-details">
-                    <span class="${badgeClass}">${r.cls}</span>
+                    <span class="${badgeClass}">${r.class}</span>
                     <span class="timeline-stat">🛒 ${r.transactions} trx</span>
                     <span class="timeline-stat" style="color:${sentColor}">💬 ${(r.sentiment >= 0 ? '+' : '') + r.sentiment.toFixed(2)}</span>
                   </div>
@@ -1026,9 +1326,103 @@ function renderMyBusiness() {
       </div>
     </div>
 
+    <!-- ====== TRANSACTION EXPLORER & SIMULATOR ====== -->
+    <div class="mybiz-tx-section">
+      <div class="mybiz-tx-header">
+        <h3>📊 Data Explorer Transaksi Realtime</h3>
+        <button class="nav-btn active" onclick="toggleAddTransactionForm()" style="background:var(--accent-brand); border-color:var(--accent-brand); color:white;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Tambah Transaksi
+        </button>
+      </div>
+
+      <!-- ADD TRANSACTION FORM (HIDDEN BY DEFAULT) -->
+      <div class="mybiz-form-card" id="addTxFormCard" style="display: none;">
+        <h4 style="margin-top: 0; margin-bottom: 16px; color: var(--text-primary);">Tambah Transaksi Baru</h4>
+        <form onsubmit="handleAddTransactionSubmit(event)">
+          <div class="mybiz-form-grid">
+            <div class="mybiz-form-group">
+              <label class="mybiz-form-label">No Order</label>
+              <input type="text" id="txOrderNumber" class="mybiz-form-input" readonly required />
+            </div>
+            <div class="mybiz-form-group">
+              <label class="mybiz-form-label">Tanggal</label>
+              <input type="date" id="txDate" class="mybiz-form-input" required />
+            </div>
+            <div class="mybiz-form-group">
+              <label class="mybiz-form-label">Nama Pelanggan</label>
+              <input type="text" id="txCustomerName" class="mybiz-form-input" placeholder="e.g. Budi Santoso" required />
+            </div>
+          </div>
+          <div class="mybiz-form-grid">
+            <div class="mybiz-form-group" style="grid-column: span 2;">
+              <label class="mybiz-form-label">Nama Item / Produk</label>
+              <input type="text" id="txItemName" class="mybiz-form-input" placeholder="e.g. Kopi Susu Aren" required />
+            </div>
+            <div class="mybiz-form-group">
+              <label class="mybiz-form-label">Kuantitas</label>
+              <input type="number" id="txQuantity" class="mybiz-form-input" min="1" value="1" required />
+            </div>
+            <div class="mybiz-form-group">
+              <label class="mybiz-form-label">Harga Satuan (IDR)</label>
+              <input type="number" id="txPrice" class="mybiz-form-input" min="0" placeholder="e.g. 25000" required />
+            </div>
+          </div>
+          <div class="mybiz-form-group full-width" style="margin-bottom: 16px;">
+            <label class="mybiz-form-label">Ulasan Pelanggan</label>
+            <textarea id="txReviewText" class="mybiz-form-textarea" rows="3" placeholder="Tulis komentar pembeli di sini untuk dianalisis sentimennya..." required></textarea>
+          </div>
+          <div class="mybiz-form-actions">
+            <button type="button" class="nav-btn" onclick="toggleAddTransactionForm()">Batal</button>
+            <button type="submit" id="btnSubmitTx" class="nav-btn active" style="background:var(--accent-brand); border-color:var(--accent-brand); color:white;">Simpan Transaksi</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- TRANSACTION DATA TABLE -->
+      <div class="mybiz-tx-table-wrapper">
+        <table class="mybiz-tx-table">
+          <thead>
+            <tr>
+              <th>No Order</th>
+              <th>Tanggal</th>
+              <th>Pelanggan</th>
+              <th>Produk</th>
+              <th>Jumlah</th>
+              <th>Harga</th>
+              <th>Total</th>
+              <th>Ulasan Pelanggan</th>
+              <th>Sentimen</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${transactions.length > 0 ? transactions.map(t => {
+              const score = t.sentiment_score !== null ? parseFloat(t.sentiment_score) : 0;
+              const badgeColor = score >= 0.2 ? 'var(--elite)' : score <= -0.15 ? 'var(--critical)' : 'var(--growth)';
+              const label = score >= 0.2 ? 'Positif' : score <= -0.15 ? 'Negatif' : 'Netral';
+              return `
+              <tr>
+                <td style="font-weight: 700; color: var(--text-secondary);">${t.order_number}</td>
+                <td>${t.date}</td>
+                <td style="font-weight: 600;">${t.customer_name || '—'}</td>
+                <td>${t.item_name}</td>
+                <td>${t.quantity}</td>
+                <td>${formatIDR(t.price)}</td>
+                <td style="font-weight: 700;">${formatIDR(t.amount)}</td>
+                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${t.review_text || ''}">${t.review_text || '—'}</td>
+                <td>
+                  <span class="class-badge" style="background:${badgeColor}15; color:${badgeColor}; border:none; padding: 2px 6px; font-size:11px;">
+                    ${label} (${(score >= 0 ? '+' : '') + score.toFixed(2)})
+                  </span>
+                </td>
+              </tr>`;
+            }).join('') : `<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-muted);">Belum ada data transaksi.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
   `;
 }
-
 
 // ─── Init on Page Load ───────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -1085,7 +1479,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load embedded data
   loadData();
 
-  // Set user info in header (dashboard only)
+  // Set user info in header (dashboard only) & sync Supabase data
   if (isDashboardPage) {
     const session = getSession();
     if (session) {
@@ -1093,6 +1487,33 @@ document.addEventListener('DOMContentLoaded', () => {
       const nameEl = document.getElementById('headerUsername');
       if (avatarEl) avatarEl.textContent = session.avatar;
       if (nameEl) nameEl.textContent = session.name;
+
+      // Sync and prefill
+      syncUMKMData().then(updatedSession => {
+        if (updatedSession) {
+          // Subscribe to live transactions
+          subscribeToTransactions(updatedSession.umkmId);
+
+          // Prefill sidebar form with latest history month values
+          const history = updatedSession.history || [];
+          if (history.length > 0) {
+            const latest = history[history.length - 1];
+            const revInput = document.getElementById('inputRevenue');
+            const expInput = document.getElementById('inputExpenses');
+            const txsSlider = document.getElementById('inputTransactions');
+            const tenureSlider = document.getElementById('inputTenure');
+
+            if (revInput) revInput.value = latest.revenue;
+            if (expInput) expInput.value = latest.expenses;
+            if (txsSlider) txsSlider.value = latest.transactions;
+            if (tenureSlider) tenureSlider.value = updatedSession.tenure;
+
+            updateSlider('transaction');
+            updateSlider('tenure');
+            updateCurrencyHelpers();
+          }
+        }
+      });
     }
   }
 });

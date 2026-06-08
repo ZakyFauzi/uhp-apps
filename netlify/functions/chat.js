@@ -23,8 +23,20 @@ exports.handler = async function(event) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid messages format' }) };
     }
 
-    // API key: check Netlify env var first, then fallback
-    const apiKey = process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY_PLACEHOLDER';
+    // API key: check Netlify env var first
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_PLACEHOLDER') {
+      console.warn('GEMINI_API_KEY is not configured.');
+      return {
+        statusCode: 200, // Return 200 so the client displays the explanation directly
+        headers,
+        body: JSON.stringify({ 
+          reply: '⚠️ **Konfigurasi API Key Dibutuhkan**: UHePi belum dikonfigurasi dengan API Key Gemini Anda di Netlify. Silakan buka dashboard Netlify Anda, masuk ke **Site configuration** > **Environment variables**, lalu tambahkan variabel `GEMINI_API_KEY` dengan API Key Gemini Anda (misalnya: `AIzaSy...`). Setelah itu, lakukan redeploy.' 
+        }),
+      };
+    }
+
     const model = 'gemini-2.5-flash';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
@@ -65,9 +77,11 @@ exports.handler = async function(event) {
       const errBody = await response.text();
       console.error('Gemini API error:', response.status, errBody);
       return {
-        statusCode: response.status,
+        statusCode: 200, // Return 200 with error details as chatbot message
         headers,
-        body: JSON.stringify({ error: `Gemini API error: ${response.status}`, details: errBody }),
+        body: JSON.stringify({ 
+          reply: `❌ **Kendala API Gemini (Status ${response.status})**: Gagal mendapatkan respons dari Google Gemini. Detail kesalahan: \`${errBody.substring(0, 200)}\`. Pastikan API Key Anda aktif dan valid.` 
+        }),
       };
     }
 
@@ -84,9 +98,11 @@ exports.handler = async function(event) {
   } catch (err) {
     console.error('Function error:', err);
     return {
-      statusCode: 500,
+      statusCode: 200,
       headers,
-      body: JSON.stringify({ error: 'Internal server error', message: err.message }),
+      body: JSON.stringify({ 
+        reply: `❌ **Internal Server Error**: Terjadi kesalahan pada serverless function Netlify. Detail: \`${err.message}\`` 
+      }),
     };
   }
 };
